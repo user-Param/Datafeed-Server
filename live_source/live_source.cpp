@@ -12,11 +12,11 @@ live_source::live_source(std::shared_ptr<session_manager> manager)
 void live_source::start() {
     std::cout << "[LiveSource] Starting..." << std::endl;
 
-    // Default to JUPITER as requested
-    adapter_ = std::make_shared<EAdapter>(ExchangeType::JUPITER);
+    // Use BINANCE exchange
+    adapter_ = std::make_shared<EAdapter>(ExchangeType::BINANCE);
 
-    // Initial symbols for Jupiter/Solana
-    adapter_->set_symbols({"SOL", "BTC", "ETH"});
+    // Initial symbols for Binance
+    adapter_->set_symbols({"BTCUSDT", "ETHUSDT", "SOLUSDT"});
 
     adapter_->set_callback([this](const std::string& symbol, double price, double bid, double ask, long ts) {
         MarketData data;
