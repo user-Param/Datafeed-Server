@@ -1,0 +1,2 @@
+/usr/bin/ar qc libbroker.a CMakeFiles/broker.dir/broker/src/adapter/eadapter.cpp.o CMakeFiles/broker.dir/broker/src/exchange/exchange1.cpp.o CMakeFiles/broker.dir/broker/src/exchange/exchange2.cpp.o CMakeFiles/broker.dir/broker/src/exchange/exchange3.cpp.o CMakeFiles/broker.dir/broker/src/exchange/exchange4.cpp.o
+/usr/bin/ranlib libbroker.a

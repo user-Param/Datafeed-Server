@@ -5,7 +5,7 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/strand.hpp>  
+#include <boost/asio/strand.hpp>
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <queue>
