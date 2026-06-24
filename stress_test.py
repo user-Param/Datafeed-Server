@@ -85,7 +85,9 @@ class StressTestClient:
                     try:
                         data = json.loads(message)
                         if 'timestamp' in data:
-                            latency = (receive_time - data['timestamp']) * 1000  # Convert to ms
+                            # data['timestamp'] is in milliseconds since epoch
+                            # receive_time is in seconds since epoch
+                            latency = (receive_time * 1000) - data['timestamp']
                             self.latencies.append(latency)
                     except:
                         pass  # Not JSON or no timestamp, skip latency calculation

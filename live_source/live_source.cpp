@@ -34,6 +34,7 @@ void live_source::start() {
 }
 
 void live_source::on_market_data(const MarketData& data) {
+    std::cout << "[LiveSource] Received market data for " << data.symbol << ": price=" << data.price << std::endl;
     nlohmann::json j;
     j["topic"] = "ticker_";
     j["symbol"] = data.symbol;
