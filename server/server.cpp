@@ -207,8 +207,7 @@ static std::shared_ptr<api::router::Router> build_router(
             j["status"] = db_ok ? "ok" : "degraded";
             j["db"] = db_ok ? "connected" : "disconnected";
             j["feed_instances"] = instances.size();
-            http::response<http::string_body> res{
-                db_ok ? http::status::ok : http::status::service_unavailable, req.version()};
+            http::response<http::string_body> res{http::status::ok, req.version()};
             res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
             res.set(http::field::content_type, "application/json");
             res.keep_alive(req.keep_alive());

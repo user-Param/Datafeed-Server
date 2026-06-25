@@ -4,9 +4,9 @@
 # This script starts all necessary services for the datafeed system
 
 # Configuration
-SERVER_PORT=4444
-SERVER_ADDRESS="0.0.0.0"
-SERVER_THREADS=4
+SERVER_PORT="${PORT:-4444}"
+SERVER_ADDRESS="${ADDRESS:-0.0.0.0}"
+SERVER_THREADS="${SERVER_THREADS:-${WEB_CONCURRENCY:-4}}"
 BUILD_DIR="./build"
 
 # Colors for output
@@ -22,7 +22,6 @@ echo -e "${YELLOW}Starting Datafeed Server...${NC}"
 # built at /home/appuser/build/datafeed and we skip host checks.
 if [ "$DOCKER_ENV" = "true" ]; then
     BUILD_DIR="."
-    SERVER_THREADS=1
 fi
 
 # ── Host-specific setup (skipped in Docker) ───────────────────
@@ -87,6 +86,11 @@ fi
 # ── Start the server ──────────────────────────────────────────
 echo -e "${YELLOW}Starting server on ${SERVER_ADDRESS}:${SERVER_PORT} with ${SERVER_THREADS} threads...${NC}"
 cd "${BUILD_DIR}"
+
+if [ "$DOCKER_ENV" = "true" ]; then
+    exec ./datafeed "${SERVER_ADDRESS}" "${SERVER_PORT}" "${SERVER_THREADS}"
+fi
+
 ./datafeed "${SERVER_ADDRESS}" "${SERVER_PORT}" "${SERVER_THREADS}" &
 SERVER_PID=$!
 cd ..
