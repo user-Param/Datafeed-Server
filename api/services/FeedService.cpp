@@ -15,14 +15,15 @@ FeedService::FeedService(std::shared_ptr<datafeed::SAdapter> adapter)
 std::optional<dto::FeedStatusResponse> FeedService::getFeedStatus() {
     if (!adapter_ || !adapter_->is_connected()) {
         // #region agent log
-        {
-            std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
-            dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"D\",\"location\":\"FeedService.cpp:getFeedStatus\","
-                << "\"message\":\"adapter not connected\",\"data\":{},\"timestamp\":"
-                << std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::system_clock::now().time_since_epoch()).count()
-                << "}\n";
-        }
+        // Disabled hardcoded debug log for deployment compatibility
+        // {
+        //     std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
+        //     dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"D\",\"location\":\"FeedService.cpp:getFeedStatus\","
+        //         << "\"message\":\"adapter not connected\",\"data\":{},\"timestamp\":"
+        //         << std::chrono::duration_cast<std::chrono::milliseconds>(
+        //                std::chrono::system_clock::now().time_since_epoch()).count()
+        //         << "}\n";
+        // }
         // #endregion
         return std::nullopt;
     }
@@ -34,15 +35,16 @@ std::optional<dto::FeedStatusResponse> FeedService::getFeedStatus() {
         }
 
         // #region agent log
-        {
-            std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
-            dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"D\",\"location\":\"FeedService.cpp:getFeedStatus\","
-                << "\"message\":\"feed instances queried\",\"data\":{\"count\":" << instances.size()
-                << "},\"timestamp\":"
-                << std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::system_clock::now().time_since_epoch()).count()
-                << "}\n";
-        }
+        // Disabled hardcoded debug log for deployment compatibility
+        // {
+        //     std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
+        //     dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"D\",\"location\":\"FeedService.cpp:getFeedStatus\","
+        //         << "\"message\":\"feed instances queried\",\"data\":{\"count\":" << instances.size()
+        //         << "},\"timestamp\":"
+        //         << std::chrono::duration_cast<std::chrono::milliseconds>(
+        //                std::chrono::system_clock::now().time_since_epoch()).count()
+        //         << "}\n";
+        // }
         // #endregion
 
         if (!instances.empty()) {

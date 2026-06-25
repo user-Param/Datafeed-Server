@@ -80,15 +80,16 @@ void backtest_source::start_replay(const std::string& date_range,
     set_feed_status("connected");
 
     // #region agent log
-    {
-        std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
-        dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"C\",\"location\":\"backtest_source.cpp:start_replay\","
-            << "\"message\":\"backtest replay starting\",\"data\":{\"date_range\":\"" << date_range
-            << "\",\"symbols\":" << syms.size() << "},\"timestamp\":"
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::system_clock::now().time_since_epoch()).count()
-            << "}\n";
-    }
+    // Disabled hardcoded debug log for deployment compatibility
+    // {
+    //     std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
+    //     dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"C\",\"location\":\"backtest_source.cpp:start_replay\","
+    //         << "\"message\":\"backtest replay starting\",\"data\":{\"date_range\":\"" << date_range
+    //         << "\",\"symbols\":" << syms.size() << "},\"timestamp\":"
+    //         << std::chrono::duration_cast<std::chrono::milliseconds>(
+    //                std::chrono::system_clock::now().time_since_epoch()).count()
+    //         << "}\n";
+    // }
     // #endregion
 
     try {
