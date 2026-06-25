@@ -10,7 +10,8 @@ RUN apt-get update && apt-get install -y \
     libboost-all-dev \
     libssl-dev \
     libpq-dev \
-    libnlohmann-json-dev \
+    libpqxx-dev \
+    nlohmann-json3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
@@ -29,9 +30,12 @@ RUN mkdir -p build && cd build && \
 # Set working directory to where the executable is
 WORKDIR /home/appuser/build
 
+# Make the startup script executable
+RUN chmod +x /home/appuser/start.sh
+
 # Expose the port (default 4444)
 EXPOSE 4444
 
-# Default command: run server on 0.0.0.0:4444 with 1 thread
+# Default command: use start.sh (Docker-aware, skips host checks)
 # Can be overridden by docker-compose or docker run
-CMD ["./datafeed", "0.0.0.0", "4444", "1"]
+CMD ["/home/appuser/start.sh"]

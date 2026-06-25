@@ -1,13 +1,47 @@
-version: '3.8'
+
 
 services:
+  # ── PostgreSQL database ──────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       datafeed
+      POSTGRES_USER:     datafeed
+      POSTGRES_PASSWORD: datafeed
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U datafeed -d datafeed"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Datafeed server ──────────────────────────────────────
   datafeed:
     build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "4444:4444"
     environment:
-      - EXCHANGE=BINANCE  # Optional: set exchange via env var
-    volumes:
-      # Optional: mount a volume for persistent logs or data if needed
-      # - ./logs:/app/logs
-    restart: unless-stopped
+      DOCKER_ENV: "true"
+
+      # Database — points to the postgres service above
+      DATABASE_URL: postgresql://datafeed:datafeed@postgres:5432/datafeed
+
+      # Exchange selection
+      EXCHANGE: BINANCE
+
+      # API keys (replace with real values or use a .env file / secrets manager)
+      JUPITER_API_KEY:  ${JUPITER_API_KEY:-}
+      BIRDEYE_API_KEY:  ${BIRDEYE_API_KEY:-}
+      CMC_API_KEY:      ${CMC_API_KEY:-}
+
+volumes:
+  pgdata:

@@ -1,5 +1,21 @@
 -- Schema for datafeed PostgreSQL database
 
+-- 0) Historical market price data (used by DAdapter / backtest_source)
+CREATE TABLE IF NOT EXISTS market_data (
+    id          BIGSERIAL PRIMARY KEY,
+    symbol      VARCHAR(50)     NOT NULL,
+    price       DOUBLE PRECISION NOT NULL,
+    bid         DOUBLE PRECISION NOT NULL DEFAULT 0,
+    ask         DOUBLE PRECISION NOT NULL DEFAULT 0,
+    quantity    INTEGER         NOT NULL DEFAULT 0,
+    timeframe   VARCHAR(10),                          -- e.g. '1m','5m','1h','1d'
+    timestamp   BIGINT          NOT NULL,             -- milliseconds since epoch
+    created_at  TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_market_data_symbol_ts    ON market_data(symbol, timestamp);
+CREATE INDEX IF NOT EXISTS idx_market_data_timeframe    ON market_data(timeframe);
+
 -- 1) Client / tenant identity
 CREATE TABLE clients (
     tenant_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

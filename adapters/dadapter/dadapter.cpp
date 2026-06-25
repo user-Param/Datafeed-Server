@@ -4,6 +4,30 @@
 #include <thread>
 #include <stdexcept>
 #include <sstream>
+#include <iomanip>
+#include <fstream>
+
+namespace {
+
+uint64_t date_to_epoch_ms(const std::string& date) {
+    std::tm tm = {};
+    std::istringstream iss(date);
+    iss >> std::get_time(&tm, "%Y-%m-%d");
+    if (iss.fail()) {
+        throw std::runtime_error("Invalid date format (expected YYYY-MM-DD): " + date);
+    }
+    tm.tm_hour = 0;
+    tm.tm_min = 0;
+    tm.tm_sec = 0;
+#if defined(_WIN32)
+    time_t t = _mkgmtime(&tm);
+#else
+    time_t t = timegm(&tm);
+#endif
+    return static_cast<uint64_t>(t) * 1000ULL;
+}
+
+} // namespace
 
 DAdapter::DAdapter(const std::string& connection_string)
     : connection_string_(connection_string) {}
@@ -44,15 +68,10 @@ void DAdapter::connect_to_database() {
 }
 
 void DAdapter::subscribe_symbols() {
-    // For database adapter, we don't subscribe in the traditional sense
-    // We just store the symbols for querying
     std::cout << "[DAdapter] Prepared to query data for " << symbols_.size() << " symbols" << std::endl;
 }
 
-void DAdapter::on_update() {
-    // Setup the callback for when data is ready
-    // This is called before starting the main loop
-}
+void DAdapter::on_update() {}
 
 void DAdapter::query_historical_data() {
     if (!conn_ || !conn_->is_open()) {
@@ -60,55 +79,64 @@ void DAdapter::query_historical_data() {
         return;
     }
 
+    if (symbols_.empty()) {
+        std::cerr << "[DAdapter] No symbols configured" << std::endl;
+        return;
+    }
+
     try {
-        // Start a non-transactional query
+        const uint64_t start_ts = date_to_epoch_ms(start_date_);
+        const uint64_t end_ts   = date_to_epoch_ms(end_date_) + 86400000ULL - 1ULL;
+
         pqxx::work txn(*conn_);
+        pqxx::params p;
+        p.append(start_ts);
+        p.append(end_ts);
 
-        // Build the query based on timeframe
-        std::string query = "SELECT symbol, price, bid, ask, quantity, timestamp FROM market_data ";
-        query += "WHERE symbol = ANY($1) AND timestamp >= $2 AND timestamp <= $3 ";
-
-        // Add timeframe filtering if needed
-        if (!timeframe_.empty()) {
-            // For simplicity, we'll assume the data is already aggregated by timeframe
-            // In a real implementation, you might need to aggregate raw data
-            query += "AND timeframe = $4 ";
+        std::ostringstream query;
+        query << "SELECT symbol, price, bid, ask, quantity, timestamp FROM market_data "
+              << "WHERE timestamp >= $1 AND timestamp <= $2 AND symbol IN (";
+        for (std::size_t i = 0; i < symbols_.size(); ++i) {
+            if (i > 0) query << ',';
+            query << '$' << (i + 3);
+            p.append(symbols_[i]);
         }
-        query += "ORDER BY timestamp ASC";
-
-        // Prepare the parameters
-        pqxx::result result;
-
+        query << ") ";
         if (!timeframe_.empty()) {
-            result = txn.exec_params(query,
-                                   pqxx::array_parse(symbols_),
-                                   start_date_,
-                                   end_date_,
-                                   timeframe_);
-        } else {
-            result = txn.exec_params(query,
-                                   pqxx::array_parse(symbols_),
-                                   start_date_,
-                                   end_date_);
+            query << "AND timeframe = $" << (symbols_.size() + 3) << ' ';
+            p.append(timeframe_);
         }
+        query << "ORDER BY timestamp ASC";
 
+        auto result = txn.exec(query.str(), p);
         txn.commit();
 
-        // Process the results and send to callback
+        // #region agent log
+        {
+            std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
+            dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"E\",\"location\":\"dadapter.cpp:query_historical_data\","
+                << "\"message\":\"historical query result\",\"data\":{\"rows\":" << result.size()
+                << ",\"start_ts\":" << start_ts << ",\"end_ts\":" << end_ts
+                << ",\"symbols\":" << symbols_.size() << "},\"timestamp\":"
+                << std::chrono::duration_cast<std::chrono::milliseconds>(
+                       std::chrono::system_clock::now().time_since_epoch()).count()
+                << "}\n";
+        }
+        // #endregion
+
         for (const auto& row : result) {
             MarketData data;
-            data.symbol = row["symbol"].as<std::string>();
-            data.price = row["price"].as<double>();
-            data.bid = row["bid"].as<double>();
-            data.ask = row["ask"].as<double>();
-            data.quantity = row["quantity"].as<int>();
+            data.symbol    = row["symbol"].as<std::string>();
+            data.price     = row["price"].as<double>();
+            data.bid       = row["bid"].as<double>();
+            data.ask       = row["ask"].as<double>();
+            data.quantity  = row["quantity"].as<int>();
             data.timestamp = row["timestamp"].as<uint64_t>();
 
             if (external_cb_) {
                 external_cb_(data);
             }
 
-            // Small delay to simulate streaming
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
@@ -117,34 +145,29 @@ void DAdapter::query_historical_data() {
 
     } catch (const std::exception& e) {
         std::cerr << "[DAdapter] Error querying historical data: " << e.what() << std::endl;
+        // #region agent log
+        {
+            std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
+            dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"E\",\"location\":\"dadapter.cpp:query_historical_data\","
+                << "\"message\":\"query error\",\"data\":{\"error\":\"" << e.what() << "\"},\"timestamp\":"
+                << std::chrono::duration_cast<std::chrono::milliseconds>(
+                       std::chrono::system_clock::now().time_since_epoch()).count()
+                << "}\n";
+        }
+        // #endregion
     }
 }
 
 void DAdapter::run() {
     std::cout << "[DAdapter] Starting historical data query..." << std::endl;
-
-    // Setup callback for data updates
     on_update();
-
-    // Connect to database
     connect_to_database();
-
-    // Prepare symbols (subscribe)
     subscribe_symbols();
 
     running_ = true;
-
-    // Main loop - query historical data and send via callback
     while (running_) {
         query_historical_data();
-
-        // For historical data, we typically query once and then stop
-        // Unless we want to continuously stream new data
-        // For now, we'll break after one query
         break;
-
-        // If we wanted to continuously poll for new data:
-        // std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 }
 
@@ -154,12 +177,11 @@ void DAdapter::stop() {
         worker_thread_.join();
     }
     if (conn_ && conn_->is_open()) {
-        conn_->disconnect();
+        conn_->close();
     }
     std::cout << "[DAdapter] Stopped" << std::endl;
 }
 
-// Private helpers
 void DAdapter::_connect() { connect_to_database(); }
 void DAdapter::_subscribe(const std::vector<std::string>& syms) { symbols_ = syms; subscribe_symbols(); }
 void DAdapter::_set_callback() { on_update(); }

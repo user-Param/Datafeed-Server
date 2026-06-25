@@ -17,62 +17,74 @@ NC='\033[0m' # No Color
 
 echo -e "${YELLOW}Starting Datafeed Server...${NC}"
 
-# Check if we're in the right directory
-if [ ! -f "CMakeLists.txt" ]; then
-    echo -e "${RED}Error: CMakeLists.txt not found. Please run this script from the project root directory.${NC}"
-    exit 1
+# ── Docker environment ────────────────────────────────────────
+# When running inside a Docker container the binary is already
+# built at /home/appuser/build/datafeed and we skip host checks.
+if [ "$DOCKER_ENV" = "true" ]; then
+    BUILD_DIR="."
+    SERVER_THREADS=1
 fi
 
-# Build the project if needed
-if [ ! -f "${BUILD_DIR}/datafeed" ]; then
-    echo -e "${YELLOW}Building project...${NC}"
-    if [ ! -d "${BUILD_DIR}" ]; then
-        mkdir -p "${BUILD_DIR}"
-    fi
-    cd "${BUILD_DIR}" && cmake .. && make
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}Build failed!${NC}"
+# ── Host-specific setup (skipped in Docker) ───────────────────
+if [ "$DOCKER_ENV" != "true" ]; then
+
+    # Check if we're in the right directory
+    if [ ! -f "CMakeLists.txt" ]; then
+        echo -e "${RED}Error: CMakeLists.txt not found. Please run this script from the project root directory.${NC}"
         exit 1
     fi
-    cd ..
-    echo -e "${GREEN}Build successful!${NC}"
+
+    # Build the project if needed
+    if [ ! -f "${BUILD_DIR}/datafeed" ]; then
+        echo -e "${YELLOW}Building project...${NC}"
+        if [ ! -d "${BUILD_DIR}" ]; then
+            mkdir -p "${BUILD_DIR}"
+        fi
+        cd "${BUILD_DIR}" && cmake .. && make
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}Build failed!${NC}"
+            exit 1
+        fi
+        cd ..
+        echo -e "${GREEN}Build successful!${NC}"
+    fi
+
+    # Function to kill processes on a specific port
+    kill_port() {
+        local port=$1
+        echo -e "${YELLOW}Checking for existing processes on port ${port}...${NC}"
+
+        # Find and kill processes using the port
+        if command -v lsof > /dev/null; then
+            PID=$(lsof -ti:${port})
+            if [ ! -z "$PID" ]; then
+                echo -e "${YELLOW}Killing process ${PID} on port ${port}${NC}"
+                kill -9 $PID 2>/dev/null
+                sleep 1
+            fi
+        elif command -v netstat > /dev/null; then
+            PID=$(netstat -tulpn | grep :$port | awk '{print $7}' | cut -d'/' -f1)
+            if [ ! -z "$PID" ] && [ "$PID" != "-" ]; then
+                echo -e "${YELLOW}Killing process ${PID} on port ${port}${NC}"
+                kill -9 $PID 2>/dev/null
+                sleep 1
+            fi
+        elif command -v ss > /dev/null; then
+            PID=$(ss -tulpn | grep :$port | awk '{print $7}' | cut -d'/' -f1)
+            if [ ! -z "$PID" ] && [ "$PID" != "-" ]; then
+                echo -e "${YELLOW}Killing process ${PID} on port ${port}${NC}"
+                kill -9 $PID 2>/dev/null
+                sleep 1
+            fi
+        fi
+    }
+
+    # Kill any existing processes on our ports
+    echo -e "${YELLOW}Clearing ports before startup...${NC}"
+    kill_port $SERVER_PORT
 fi
 
-# Function to kill processes on a specific port
-kill_port() {
-    local port=$1
-    echo -e "${YELLOW}Checking for existing processes on port ${port}...${NC}"
-
-    # Find and kill processes using the port
-    if command -v lsof > /dev/null; then
-        PID=$(lsof -ti:${port})
-        if [ ! -z "$PID" ]; then
-            echo -e "${YELLOW}Killing process ${PID} on port ${port}${NC}"
-            kill -9 $PID 2>/dev/null
-            sleep 1
-        fi
-    elif command -v netstat > /dev/null; then
-        PID=$(netstat -tulpn | grep :$port | awk '{print $7}' | cut -d'/' -f1)
-        if [ ! -z "$PID" ] && [ "$PID" != "-" ]; then
-            echo -e "${YELLOW}Killing process ${PID} on port ${port}${NC}"
-            kill -9 $PID 2>/dev/null
-            sleep 1
-        fi
-    elif command -v ss > /dev/null; then
-        PID=$(ss -tulpn | grep :$port | awk '{print $7}' | cut -d'/' -f1)
-        if [ ! -z "$PID" ] && [ "$PID" != "-" ]; then
-            echo -e "${YELLOW}Killing process ${PID} on port ${port}${NC}"
-            kill -9 $PID 2>/dev/null
-            sleep 1
-        fi
-    fi
-}
-
-# Kill any existing processes on our ports
-echo -e "${YELLOW}Clearing ports before startup...${NC}"
-kill_port $SERVER_PORT
-
-# Start the server
+# ── Start the server ──────────────────────────────────────────
 echo -e "${YELLOW}Starting server on ${SERVER_ADDRESS}:${SERVER_PORT} with ${SERVER_THREADS} threads...${NC}"
 cd "${BUILD_DIR}"
 ./datafeed "${SERVER_ADDRESS}" "${SERVER_PORT}" "${SERVER_THREADS}" &

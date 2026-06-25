@@ -4,8 +4,8 @@
 #include <memory>
 #include <string>
 #include <boost/beast/http.hpp>
-#include "../../services/FeedService.hpp"
-#include "../../dto/FeedStatusResponse.hpp"
+#include "../services/FeedService.hpp"
+#include "../dto/FeedStatusResponse.hpp"
 #include <nlohmann/json.hpp>
 
 namespace api {
