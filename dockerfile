@@ -2,6 +2,7 @@ FROM ubuntu:22.04
 
 # Set non-interactive mode for apt-get
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DOCKER_ENV=true
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
