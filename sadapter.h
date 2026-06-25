@@ -8,11 +8,6 @@
 #include <memory>
 #include <mutex>
 
-// Forward declaration to avoid including pqxx headers in the public interface
-namespace pqxx {
-    class connection;
-}
-
 namespace datafeed {
 
 // Define structs that match the database tables
@@ -251,17 +246,16 @@ public:
     bool update_config_version(const ConfigVersion& config);
     bool delete_config_version(int64_t id);
 
-private:
-    std::string connection_string_;
-    std::unique_ptr<pqxx::connection> conn_;
-    mutable std::recursive_mutex mutex_;
-
     // Helper functions for converting between application types and database types
     static std::string timestamp_to_string(uint64_t ms);
     static uint64_t string_to_timestamp(const std::string& str);
 
     static std::string interval_to_string(int64_t seconds);
     static int64_t string_to_interval(const std::string& str);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> pImpl_;
 };
 
 } // namespace datafeed
