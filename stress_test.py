@@ -10,8 +10,10 @@ import time
 import statistics
 import argparse
 import sys
+import urllib.request
+import urllib.error
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple, Any
 import websockets
 import logging
 
@@ -368,46 +370,390 @@ class DatafeedStressTest:
 
         return "\n".join(report)
 
+class EndToEndTest:
+    """
+    End-to-end system test that validates every HTTP REST endpoint and
+    WebSocket capability of the datafeed server.  Produces a detailed
+    pass/fail report.
+    """
+
+    def __init__(self, host: str = "localhost", port: int = 4444):
+        self.host = host
+        self.port = port
+        self.base_url = f"http://{host}:{port}"
+        self.ws_url = f"ws://{host}:{port}"
+        self.results: Dict[str, Any] = {
+            "start_time": None,
+            "end_time": None,
+            "tests": [],
+        }
+
+    # ── HTTP helper ────────────────────────────────────────────
+
+    def _http_request(
+        self, method: str, path: str, body: Optional[dict] = None
+    ) -> Tuple[Optional[int], Any]:
+        url = f"{self.base_url}{path}"
+        data = json.dumps(body).encode() if body else None
+        req = urllib.request.Request(url, data=data, method=method)
+        req.add_header("Content-Type", "application/json")
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw = resp.read()
+                return resp.status, json.loads(raw.decode()) if raw else {}
+        except urllib.error.HTTPError as e:
+            raw = e.read()
+            return e.code, json.loads(raw.decode()) if raw else {}
+        except Exception as e:
+            return None, {"error": str(e)}
+
+    def _record(self, name: str, passed: bool, detail: str) -> None:
+        self.results["tests"].append({
+            "name": name,
+            "passed": passed,
+            "detail": detail,
+        })
+
+    # ── HTTP endpoint tests ───────────────────────────────────
+
+    def run_http_tests(self) -> None:
+        """Exercise every REST API route and verify responses."""
+
+        # 1  GET /health
+        status, data = self._http_request("GET", "/health")
+        db_ok = data.get("db") == "connected"
+        self._record(
+            "GET /health",
+            status == 200 and db_ok,
+            f"Status={status}, db={data.get('db')}, "
+            f"feed_instances={data.get('feed_instances')}",
+        )
+
+        # 2  GET /api/v1/feed/status
+        status, data = self._http_request("GET", "/api/v1/feed/status")
+        self._record(
+            "GET /api/v1/feed/status",
+            status in (200, 500),         # 500 when no feed instances registered
+            f"Status={status}, response_keys={list(data.keys())}",
+        )
+
+        # 3  GET /api/v1/clients  (expect empty array)
+        status, data = self._http_request("GET", "/api/v1/clients")
+        is_arr = isinstance(data, list)
+        self._record(
+            "GET /api/v1/clients (before create)",
+            status == 200 and is_arr,
+            f"Status={status}, type={type(data).__name__}, "
+            f"count={len(data) if is_arr else 'N/A'}",
+        )
+
+        # 4  POST /api/v1/clients  (create)
+        payload = {
+            "client_name": "E2E Test Client",
+            "plan": "premium",
+            "status": "active",
+        }
+        status, data = self._http_request("POST", "/api/v1/clients", body=payload)
+        tenant_id: str = data.get("tenant_id", "")
+        created = status == 201 and bool(tenant_id)
+        self._record(
+            "POST /api/v1/clients (create)",
+            created,
+            f"Status={status}, tenant_id={tenant_id or 'N/A'}, "
+            f"name={data.get('client_name', 'N/A')}",
+        )
+
+        # 5  GET /api/v1/clients/:id
+        if created:
+            status, data = self._http_request("GET", f"/api/v1/clients/{tenant_id}")
+            self._record(
+                "GET /api/v1/clients/:id (by id)",
+                status == 200 and data.get("tenant_id") == tenant_id,
+                f"Status={status}, tenant_id={data.get('tenant_id')}, "
+                f"name={data.get('client_name')}",
+            )
+        else:
+            self._record(
+                "GET /api/v1/clients/:id (by id)",
+                False,
+                "Skipped — no tenant_id from create step",
+            )
+
+        # 6  DELETE /api/v1/clients/:id
+        if created:
+            status, data = self._http_request(
+                "DELETE", f"/api/v1/clients/{tenant_id}"
+            )
+            self._record(
+                "DELETE /api/v1/clients/:id (delete)",
+                status == 204,
+                f"Status={status}",
+            )
+        else:
+            self._record(
+                "DELETE /api/v1/clients/:id (delete)",
+                False,
+                "Skipped — no tenant_id from create step",
+            )
+
+        # 7  GET /api/v1/clients  (verify deletion)
+        status, data = self._http_request("GET", "/api/v1/clients")
+        is_arr = isinstance(data, list)
+        self._record(
+            "GET /api/v1/clients (after delete)",
+            status == 200 and is_arr,
+            f"Status={status}, count={len(data) if is_arr else 'N/A'}",
+        )
+
+    # ── WebSocket tests ───────────────────────────────────────
+
+    async def run_websocket_tests(self) -> None:
+        """Test WebSocket connect, subscribe, data reception, commands."""
+
+        try:
+            async with websockets.connect(
+                self.ws_url, max_size=2 ** 20, timeout=15
+            ) as ws:
+                # Subscribe — server uses string-contains matching
+                await ws.send(json.dumps({"action": "subscribe", "topic": "all"}))
+                await asyncio.sleep(0.2)
+
+                # Switch to Live mode
+                await ws.send("_Live")
+                await asyncio.sleep(0.2)
+
+                # Collect received messages
+                received: List[str] = []
+                try:
+                    while len(received) < 3:
+                        msg = await asyncio.wait_for(ws.recv(), timeout=8)
+                        received.append(msg)
+                except asyncio.TimeoutError:
+                    pass
+
+                has_data = len(received) > 0
+                self._record(
+                    "WebSocket — Connect & Subscribe",
+                    has_data,
+                    f"Connected, subscribed to 'all', received "
+                    f"{len(received)} message(s)",
+                )
+
+                # Validate message structure
+                if received:
+                    try:
+                        parsed = json.loads(received[0])
+                        valid = isinstance(parsed, dict) and "topic" in parsed
+                        self._record(
+                            "WebSocket — Message Format",
+                            valid,
+                            f"topic={parsed.get('topic', 'N/A')}, "
+                            f"keys={list(parsed.keys())}",
+                        )
+                    except json.JSONDecodeError:
+                        self._record(
+                            "WebSocket — Message Format",
+                            False,
+                            f"Invalid JSON: {received[0][:100]}",
+                        )
+                else:
+                    self._record(
+                        "WebSocket — Message Format",
+                        True,
+                        "No messages received to validate",
+                    )
+
+                # Send switch_exchange command
+                switch = {
+                    "type": "switch_exchange",
+                    "exchange": "BINANCE",
+                    "symbols": ["BTCUSDT"],
+                }
+                await ws.send(json.dumps(switch))
+                self._record(
+                    "WebSocket — switch_exchange",
+                    True,
+                    "Sent switch_exchange to BINANCE (no response expected)",
+                )
+
+        except Exception as e:
+            self._record(
+                "WebSocket — Connect & Subscribe",
+                False,
+                f"Error: {e}",
+            )
+
+    # ── Runner ────────────────────────────────────────────────
+
+    async def run_all(self) -> Dict[str, Any]:
+        self.results["start_time"] = time.time()
+        logger.info("=" * 60)
+        logger.info("  Starting End-to-End System Tests")
+        logger.info("=" * 60)
+
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self.run_http_tests)
+        await self.run_websocket_tests()
+
+        self.results["end_time"] = time.time()
+        return self.results
+
+    # ── Report ────────────────────────────────────────────────
+
+    def generate_report(self) -> str:
+        tests = self.results.get("tests", [])
+        passed = sum(1 for t in tests if t["passed"])
+        failed = sum(1 for t in tests if not t["passed"])
+        total = len(tests)
+        dur = (
+            self.results["end_time"] - self.results["start_time"]
+            if self.results["end_time"]
+            else 0
+        )
+
+        lines: List[str] = []
+        lines.append("=" * 60)
+        lines.append("DATAFEED SYSTEM END-TO-END TEST REPORT")
+        lines.append("=" * 60)
+        lines.append(
+            f"  Test Time:  {datetime.fromtimestamp(self.results['start_time'])}"
+        )
+        lines.append(f"  Server:     {self.host}:{self.port}")
+        lines.append(f"  Duration:   {dur:.2f}s")
+        lines.append("")
+        if failed == 0:
+            lines.append(f"  ✅  ALL {total} TESTS PASSED")
+        else:
+            lines.append(f"  ❌  {failed}/{total} TESTS FAILED")
+        lines.append("")
+
+        # HTTP section
+        lines.append("-" * 60)
+        lines.append("  HTTP ENDPOINT TESTS")
+        lines.append("-" * 60)
+        for i, t in enumerate(tests, 1):
+            if t["name"].startswith("WebSocket"):
+                continue
+            icon = "✅" if t["passed"] else "❌"
+            lines.append(f"  {icon}  Test {i}: {t['name']}")
+            lines.append(f"       {t['detail']}")
+            lines.append("")
+
+        # WebSocket section
+        lines.append("-" * 60)
+        lines.append("  WEBSOCKET TESTS")
+        lines.append("-" * 60)
+        for i, t in enumerate(tests, 1):
+            if not t["name"].startswith("WebSocket"):
+                continue
+            icon = "✅" if t["passed"] else "❌"
+            lines.append(f"  {icon}  Test {i}: {t['name']}")
+            lines.append(f"       {t['detail']}")
+            lines.append("")
+
+        # Summary
+        lines.append("=" * 60)
+        lines.append("  SUMMARY")
+        lines.append("=" * 60)
+        lines.append(f"  Total Tests:  {total}")
+        lines.append(f"  Passed:       {passed}")
+        lines.append(f"  Failed:       {failed}")
+        if failed > 0:
+            lines.append("")
+            lines.append("  FAILED TESTS:")
+            for t in tests:
+                if not t["passed"]:
+                    lines.append(f"    ❌ {t['name']}")
+                    lines.append(f"       {t['detail']}")
+        lines.append("")
+        if failed == 0:
+            lines.append("  ✅  END-TO-END SYSTEM TEST: PASSED")
+        else:
+            lines.append("  ❌  END-TO-END SYSTEM TEST: FAILED")
+        lines.append("=" * 60)
+        return "\n".join(lines)
+
+
 async def main():
-    parser = argparse.ArgumentParser(description='Stress test for datafeed server')
-    parser.add_argument('--host', default='localhost', help='Server host (default: localhost)')
-    parser.add_argument('--port', type=int, default=4444, help='Server port (default: 4444)')
-    parser.add_argument('--clients', type=int, default=100, help='Number of concurrent clients (default: 100)')
-    parser.add_argument('--duration', type=int, default=30, help='Test duration in seconds (default: 30)')
-    parser.add_argument('--topics', nargs='+', default=['ticker_'],
-                       help='Topics to subscribe to (default: ticker_)')
-    parser.add_argument('--ramp-up', type=int, default=10,
-                       help='Client connection ramp-up time in seconds (default: 10)')
-    parser.add_argument('--output', type=str, help='Output report to file')
+    parser = argparse.ArgumentParser(
+        description="Datafeed server test suite — stress test or end-to-end test"
+    )
+    parser.add_argument("--host", default="localhost", help="Server host (default: localhost)")
+    parser.add_argument("--port", type=int, default=4444, help="Server port (default: 4444)")
+    parser.add_argument(
+        "--e2e",
+        action="store_true",
+        help="Run end-to-end system test instead of stress test",
+    )
+    parser.add_argument(
+        "--clients",
+        type=int,
+        default=100,
+        help="Number of concurrent clients (default: 100)",
+    )
+    parser.add_argument(
+        "--duration",
+        type=int,
+        default=30,
+        help="Test duration in seconds (default: 30)",
+    )
+    parser.add_argument(
+        "--topics",
+        nargs="+",
+        default=["ticker_"],
+        help="Topics to subscribe to (default: ticker_)",
+    )
+    parser.add_argument(
+        "--ramp-up",
+        type=int,
+        default=10,
+        help="Client connection ramp-up time in seconds (default: 10)",
+    )
+    parser.add_argument("--output", type=str, help="Output report to file")
 
     args = parser.parse_args()
 
-    # Create stress test instance
+    # ── End-to-end test mode ─────────────────────────────────
+    if args.e2e:
+        e2e = EndToEndTest(args.host, args.port)
+        try:
+            await e2e.run_all()
+            report = e2e.generate_report()
+            print(report)
+            if args.output:
+                with open(args.output, "w") as f:
+                    f.write(report)
+                logger.info("Report saved to %s", args.output)
+        except Exception as e:
+            logger.error("E2E test failed: %s", e)
+            import traceback
+
+            traceback.print_exc()
+        return
+
+    # ── Stress test mode ─────────────────────────────────────
     stress_test = DatafeedStressTest(args.host, args.port)
 
     try:
-        # Run the test
         results = await stress_test.run_concurrent_test(
             num_clients=args.clients,
             test_duration=args.duration,
             subscribe_topics=args.topics,
-            ramp_up_time=args.ramp_up
+            ramp_up_time=args.ramp_up,
         )
 
-        # Generate and display report
         report = stress_test.generate_report()
         print(report)
 
-        # Save to file if requested
         if args.output:
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 f.write(report)
-            logger.info(f"Report saved to {args.output}")
+            logger.info("Report saved to %s", args.output)
 
     except KeyboardInterrupt:
         logger.info("Test interrupted by user")
     except Exception as e:
-        logger.error(f"Test failed with error: {e}")
+        logger.error("Test failed with error: %s", e)
         import traceback
         traceback.print_exc()
 

@@ -13,6 +13,7 @@
 #include <vector>
 #include <memory>
 #include "../session/session_manager.h"
+#include "../api/router/router.hpp"
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -61,14 +62,18 @@ class http_session : public std::enable_shared_from_this<http_session>
     beast::flat_buffer buffer_;
     http::request_parser<http::string_body> parser_;
     std::shared_ptr<session_manager> manager_;
+    std::shared_ptr<api::router::Router> router_;
 
 public:
-    http_session(tcp::socket &&socket, std::shared_ptr<session_manager> manager);
+    http_session(tcp::socket &&socket,
+                 std::shared_ptr<session_manager> manager,
+                 std::shared_ptr<api::router::Router> router);
     void run();
 
 private:
     void do_read();
     void on_read(beast::error_code ec, std::size_t bytes_transferred);
+    http::response<http::string_body> make_not_found(unsigned version);
 };
 
 // Listener class declaration
@@ -77,9 +82,13 @@ class listener : public std::enable_shared_from_this<listener>
     net::io_context &ioc_;
     tcp::acceptor acceptor_;
     std::shared_ptr<session_manager> manager_;
+    std::shared_ptr<api::router::Router> router_;
 
 public:
-    listener(net::io_context &ioc, tcp::endpoint endpoint, std::shared_ptr<session_manager> manager);
+    listener(net::io_context &ioc,
+             tcp::endpoint endpoint,
+             std::shared_ptr<session_manager> manager,
+             std::shared_ptr<api::router::Router> router);
     void run();
 
 private:

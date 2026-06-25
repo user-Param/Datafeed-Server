@@ -19,69 +19,49 @@ find_package(nlohmann_json REQUIRED)
 find_package(PostgreSQL REQUIRED)
 
 # Discovery for libpqxx
-find_library(PQXX_LIB pqxx)
-find_path(PQXX_INCLUDE_DIR pqxx/pqxx)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PQXX REQUIRED libpqxx)
 
-if(NOT PQXX_LIB OR NOT PQXX_INCLUDE_DIR)
-    message(FATAL_ERROR "libpqxx not found. Please install libpqxx-dev (Ubuntu) or libpqxx (macOS)")
-endif()
-
-# Broker library
+# ─────────────────────────────────────────────
+# Broker static library (exchange adapters)
+# ─────────────────────────────────────────────
 add_library(broker STATIC
     ${CMAKE_SOURCE_DIR}/broker/src/adapter/eadapter.cpp
     ${CMAKE_SOURCE_DIR}/broker/src/exchange/exchange1.cpp
     ${CMAKE_SOURCE_DIR}/broker/src/exchange/exchange2.cpp
     ${CMAKE_SOURCE_DIR}/broker/src/exchange/exchange3.cpp
-    ${CMAKE_SOURCE_DIR}/broker/src/exchange/exchange4.cpp
 )
 
-# EAdapter executable (exchange adapter)
-add_executable(eadapter
-    ${CMAKE_SOURCE_DIR}/main.cpp
-)
-
-# Datafeed executable (main server application)
-add_executable(datafeed
-    ${CMAKE_SOURCE_DIR}/server/server.cpp
-    ${CMAKE_SOURCE_DIR}/session/session_manager.cpp
-    ${CMAKE_SOURCE_DIR}/live_source/live_source.cpp
-    ${CMAKE_SOURCE_DIR}/backtest_source/backtest_source.cpp
-    ${CMAKE_SOURCE_DIR}/utils/error.cpp
-)
-
-# Include directories
 target_include_directories(broker
-    PRIVATE
+    PUBLIC
     ${CMAKE_SOURCE_DIR}/broker/include
+    PRIVATE
+    ${Boost_INCLUDE_DIRS}
     ${PostgreSQL_INCLUDE_DIRS}
     ${PQXX_INCLUDE_DIR}
 )
 
-target_include_directories(eadapter
-    PRIVATE
-    ${CMAKE_SOURCE_DIR}/broker/include
-    ${Boost_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}
-    nlohmann_json::nlohmann_json
-)
-
-target_include_directories(datafeed
-    PRIVATE
-    ${Boost_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}
-    nlohmann_json::nlohmann_json
-    ${PostgreSQL_INCLUDE_DIRS}
-    ${PQXX_INCLUDE_DIR}
-)
-
-# Link libraries
 target_link_libraries(broker
-    PRIVATE
+    PUBLIC
     ${Boost_LIBRARIES}
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads
     nlohmann_json::nlohmann_json
+)
+
+# ─────────────────────────────────────────────
+# eadapter CLI (standalone broker test binary)
+# ─────────────────────────────────────────────
+add_executable(eadapter
+    ${CMAKE_SOURCE_DIR}/main.cpp
+)
+
+target_include_directories(eadapter
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}/broker/include
+    ${CMAKE_SOURCE_DIR}
+    ${Boost_INCLUDE_DIRS}
 )
 
 target_link_libraries(eadapter
@@ -91,16 +71,52 @@ target_link_libraries(eadapter
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads
-    ${PQXX_LIB}
-    PostgreSQL::PostgreSQL
 )
 
+# ─────────────────────────────────────────────
+# datafeed server (main application)
+# ─────────────────────────────────────────────
+add_executable(datafeed
+    # Server core
+    ${CMAKE_SOURCE_DIR}/server/server.cpp
+    ${CMAKE_SOURCE_DIR}/session/session_manager.cpp
+    ${CMAKE_SOURCE_DIR}/utils/error.cpp
+
+    # Data sources
+    ${CMAKE_SOURCE_DIR}/live_source/live_source.cpp
+    ${CMAKE_SOURCE_DIR}/backtest_source/backtest_source.cpp
+
+    # Database ORM adapter
+    ${CMAKE_SOURCE_DIR}/sadapter.cpp
+
+    # Database history adapter (used by backtest_source)
+    ${CMAKE_SOURCE_DIR}/adapters/dadapter/dadapter.cpp
+
+    # REST API layer
+    ${CMAKE_SOURCE_DIR}/api/router/router.cpp
+    ${CMAKE_SOURCE_DIR}/api/controllers/FeedController.cpp
+    ${CMAKE_SOURCE_DIR}/api/services/FeedService.cpp
+    ${CMAKE_SOURCE_DIR}/api/services/ClientService.cpp
+)
+
+target_include_directories(datafeed
+    PRIVATE
+    ${PQXX_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/broker/include
+    ${Boost_INCLUDE_DIRS}
+    ${PostgreSQL_INCLUDE_DIRS}
+)
+
+# nlohmann_json via target (adds include dirs transitively)
 target_link_libraries(datafeed
     PRIVATE
+    broker
     ${Boost_LIBRARIES}
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads
+    ${PQXX_LIBRARIES}
     PostgreSQL::PostgreSQL
-    broker
+    nlohmann_json::nlohmann_json
 )

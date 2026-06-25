@@ -1,0 +1,16 @@
+{"sessionId":"627934","hypothesisId":"A","location":"server.cpp:main","message":"startup db connection","data":{"connected":true},"timestamp":1782360394104}
+{"sessionId":"627934","hypothesisId":"B","location":"live_source.cpp:register_feed_instance","message":"feed instance registered","data":{"instance_id":"live-1","exchange":"BINANCE"},"timestamp":1782360394107}
+{"sessionId":"627934","hypothesisId":"D","location":"FeedService.cpp:getFeedStatus","message":"feed instances queried","data":{"count":1},"timestamp":1782360403076}
+{"sessionId":"627934","hypothesisId":"A","location":"server.cpp:main","message":"startup db connection","data":{"connected":true},"timestamp":1782360676489}
+{"sessionId":"627934","hypothesisId":"B","location":"live_source.cpp:register_feed_instance","message":"feed instance registered","data":{"instance_id":"live-1","exchange":"BINANCE"},"timestamp":1782360676493}
+{"sessionId":"627934","hypothesisId":"D","location":"FeedService.cpp:getFeedStatus","message":"feed instances queried","data":{"count":1},"timestamp":1782360681831}
+{"sessionId":"627934","hypothesisId":"A","location":"server.cpp:main","message":"startup db connection","data":{"connected":true},"timestamp":1782360909570}
+{"sessionId":"627934","hypothesisId":"B","location":"live_source.cpp:register_feed_instance","message":"feed instance registered","data":{"instance_id":"live-1","exchange":"BINANCE"},"timestamp":1782360909576}
+{"sessionId":"627934","hypothesisId":"D","location":"FeedService.cpp:getFeedStatus","message":"feed instances queried","data":{"count":1},"timestamp":1782360910987}
+{"sessionId":"627934","hypothesisId":"A","location":"server.cpp:main","message":"startup db connection","data":{"connected":true},"timestamp":1782361878619}
+{"sessionId":"627934","hypothesisId":"B","location":"live_source.cpp:register_feed_instance","message":"feed instance registered","data":{"instance_id":"live-1","exchange":"BINANCE"},"timestamp":1782361878627}
+{"sessionId":"627934","hypothesisId":"A","location":"server.cpp:main","message":"startup db connection","data":{"connected":true},"timestamp":1782362401189}
+{"sessionId":"627934","hypothesisId":"B","location":"live_source.cpp:register_feed_instance","message":"feed instance registered","data":{"instance_id":"live-1","exchange":"BINANCE"},"timestamp":1782362401194}
+{"sessionId":"627934","hypothesisId":"A","location":"server.cpp:main","message":"startup db connection","data":{"connected":true},"timestamp":1782362587454}
+{"sessionId":"627934","hypothesisId":"B","location":"live_source.cpp:register_feed_instance","message":"feed instance registered","data":{"instance_id":"live-1","exchange":"BINANCE"},"timestamp":1782362587459}
+{"sessionId":"627934","hypothesisId":"D","location":"FeedService.cpp:getFeedStatus","message":"feed instances queried","data":{"count":1},"timestamp":1782362871818}

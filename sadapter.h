@@ -6,6 +6,7 @@
 #include <optional>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 
 // Forward declaration to avoid including pqxx headers in the public interface
 namespace pqxx {
@@ -148,16 +149,15 @@ struct ExchangeHealth {
 
 struct BacktestJob {
     std::string job_id;
-    std::optional<std::string> dataset_id;
-    std::optional<std::string> date_range;
-    std::optional<std::string> symbols; // comma-separated or JSON array?
-    std::optional<std::string> mode;
+    std::optional<std::string> symbol;
+    std::optional<std::string> exchange;
+    std::optional<uint64_t> start_time; // milliseconds since epoch
+    std::optional<uint64_t> end_time;   // milliseconds since epoch
+    std::optional<int64_t> replay_speed;
     std::string status;
     std::optional<double> progress;
-    std::optional<uint64_t> started_at; // milliseconds since epoch
-    std::optional<uint64_t> finished_at; // milliseconds since epoch
-    std::optional<std::string> result_summary;
-    std::optional<std::string> result_artifact_url;
+    std::optional<uint64_t> created_at;   // milliseconds since epoch
+    std::optional<uint64_t> completed_at; // milliseconds since epoch
 };
 
 struct ConfigVersion {
@@ -254,6 +254,7 @@ public:
 private:
     std::string connection_string_;
     std::unique_ptr<pqxx::connection> conn_;
+    mutable std::recursive_mutex mutex_;
 
     // Helper functions for converting between application types and database types
     static std::string timestamp_to_string(uint64_t ms);
