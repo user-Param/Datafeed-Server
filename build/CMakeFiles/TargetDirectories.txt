@@ -1,0 +1,5 @@
+/Users/param/Documents/datafeed/build/CMakeFiles/broker.dir
+/Users/param/Documents/datafeed/build/CMakeFiles/eadapter.dir
+/Users/param/Documents/datafeed/build/CMakeFiles/datafeed.dir
+/Users/param/Documents/datafeed/build/CMakeFiles/edit_cache.dir
+/Users/param/Documents/datafeed/build/CMakeFiles/rebuild_cache.dir
