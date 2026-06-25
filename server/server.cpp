@@ -639,15 +639,16 @@ int main(int argc, char *argv[])
     }
 
     // #region agent log
-    {
-        std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
-        dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"A\",\"location\":\"server.cpp:main\","
-            << "\"message\":\"startup db connection\",\"data\":{\"connected\":" << (db_connected ? "true" : "false")
-            << "},\"timestamp\":"
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::system_clock::now().time_since_epoch()).count()
-            << "}\n";
-    }
+    // Disabled hardcoded debug log for deployment compatibility
+    // {
+    //     std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
+    //     dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"A\",\"location\":\"server.cpp:main\","
+    //         << "\"message\":\"startup db connection\",\"data\":{\"connected\":" << (db_connected ? "true" : "false")
+    //         << "},\"timestamp\":"
+    //         << std::chrono::duration_cast<std::chrono::milliseconds>(
+    //                std::chrono::system_clock::now().time_since_epoch()).count()
+    //         << "}\n";
+    // }
     // #endregion
 
     // ── API Router ────────────────────────────────────────
