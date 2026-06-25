@@ -31,12 +31,7 @@ RUN mkdir -p build && cd build && \
 # Set working directory to where the executable is
 WORKDIR /home/appuser/build
 
-# Make the startup script executable
-RUN chmod +x /home/appuser/start.sh
+# Expose local default and Render's default web port.
+EXPOSE 4444 10000
 
-# Expose the port (default 4444)
-EXPOSE 4444
-
-# Default command: use start.sh (Docker-aware, skips host checks)
-# Can be overridden by docker-compose or docker run
-CMD ["/home/appuser/start.sh"]
+CMD ["sh", "-c", "exec ./datafeed 0.0.0.0 ${PORT:-4444} ${WEB_CONCURRENCY:-1}"]
