@@ -35,15 +35,16 @@ void live_source::register_feed_instance(const std::string& exchange) {
     }
 
     // #region agent log
-    {
-        std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
-        dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"B\",\"location\":\"live_source.cpp:register_feed_instance\","
-            << "\"message\":\"feed instance registered\",\"data\":{\"instance_id\":\"" << instance_id_
-            << "\",\"exchange\":\"" << exchange << "\"},\"timestamp\":"
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::system_clock::now().time_since_epoch()).count()
-            << "}\n";
-    }
+    // Disabled hardcoded debug log for deployment compatibility
+    // {
+    //     std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
+    //     dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"B\",\"location\":\"live_source.cpp:register_feed_instance\","
+    //         << "\"message\":\"feed instance registered\",\"data\":{\"instance_id\":\"" << instance_id_
+    //         << "\",\"exchange\":\"" << exchange << "\"},\"timestamp\":"
+    //         << std::chrono::duration_cast<std::chrono::milliseconds>(
+    //                std::chrono::system_clock::now().time_since_epoch()).count()
+    //         << "}\n";
+    // }
     // #endregion
 }
 

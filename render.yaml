@@ -12,4 +12,6 @@ services:
         value: 1
       - key: DOCKER_ENV
         value: true
+      - key: EXCHANGE
+        value: BINANCE
     healthCheckPath: /health

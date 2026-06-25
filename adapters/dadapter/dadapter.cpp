@@ -109,16 +109,17 @@ void DAdapter::query_historical_data() {
         txn.commit();
 
         // #region agent log
-        {
-            std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
-            dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"E\",\"location\":\"dadapter.cpp:query_historical_data\","
-                << "\"message\":\"historical query result\",\"data\":{\"rows\":" << result.size()
-                << ",\"start_ts\":" << start_ts << ",\"end_ts\":" << end_ts
-                << ",\"symbols\":" << symbols_.size() << "},\"timestamp\":"
-                << std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::system_clock::now().time_since_epoch()).count()
-                << "}\n";
-        }
+        // Disabled hardcoded debug log for deployment compatibility
+        // {
+        //     std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
+        //     dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"E\",\"location\":\"dadapter.cpp:query_historical_data\","
+        //         << "\"message\":\"historical query result\",\"data\":{\"rows\":" << result.size()
+        //         << ",\"start_ts\":" << start_ts << ",\"end_ts\":" << end_ts
+        //         << ",\"symbols\":" << symbols_.size() << "},\"timestamp\":"
+        //         << std::chrono::duration_cast<std::chrono::milliseconds>(
+        //                std::chrono::system_clock::now().time_since_epoch()).count()
+        //         << "}\n";
+        // }
         // #endregion
 
         for (const auto& row : result) {
@@ -143,14 +144,15 @@ void DAdapter::query_historical_data() {
     } catch (const std::exception& e) {
         std::cerr << "[DAdapter] Error querying historical data: " << e.what() << std::endl;
         // #region agent log
-        {
-            std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
-            dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"E\",\"location\":\"dadapter.cpp:query_historical_data\","
-                << "\"message\":\"query error\",\"data\":{\"error\":\"" << e.what() << "\"},\"timestamp\":"
-                << std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::system_clock::now().time_since_epoch()).count()
-                << "}\n";
-        }
+        // Disabled hardcoded debug log for deployment compatibility
+        // {
+        //     std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
+        //     dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"E\",\"location\":\"dadapter.cpp:query_historical_data\","
+        //         << "\"message\":\"query error\",\"data\":{\"error\":\"" << e.what() << "\"},\"timestamp\":"
+        //         << std::chrono::duration_cast<std::chrono::milliseconds>(
+        //                std::chrono::system_clock::now().time_since_epoch()).count()
+        //         << "}\n";
+        // }
         // #endregion
     }
 }
