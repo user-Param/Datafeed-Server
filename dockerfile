@@ -26,7 +26,8 @@ COPY --chown=appuser:appuser . .
 # Build the application
 RUN mkdir -p build && cd build && \
     cmake .. && \
-    make -j4
+    make -j4 && \
+    ls -la datafeed
 
 # Set working directory to where the executable is
 WORKDIR /home/appuser/build
@@ -34,4 +35,5 @@ WORKDIR /home/appuser/build
 # Expose local default and Render's default web port.
 EXPOSE 4444 10000
 
-CMD ["sh", "-c", "exec ./datafeed 0.0.0.0 ${PORT:-4444} ${WEB_CONCURRENCY:-1}"]
+# Use Render's PORT environment variable, default to 10000 (Render's default)
+CMD ["sh", "-c", "if [ -f ./datafeed ]; then exec ./datafeed 0.0.0.0 ${PORT:-10000} ${WEB_CONCURRENCY:-1}; else echo 'Executable not found'; ls -la; exit 1; fi"]
