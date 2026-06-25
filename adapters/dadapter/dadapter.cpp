@@ -89,26 +89,23 @@ void DAdapter::query_historical_data() {
         const uint64_t end_ts   = date_to_epoch_ms(end_date_) + 86400000ULL - 1ULL;
 
         pqxx::work txn(*conn_);
-        pqxx::params p;
-        p.append(start_ts);
-        p.append(end_ts);
 
         std::ostringstream query;
         query << "SELECT symbol, price, bid, ask, quantity, timestamp FROM market_data "
-              << "WHERE timestamp >= $1 AND timestamp <= $2 AND symbol IN (";
+              << "WHERE timestamp >= " << txn.quote(start_ts)
+              << " AND timestamp <= " << txn.quote(end_ts)
+              << " AND symbol IN (";
         for (std::size_t i = 0; i < symbols_.size(); ++i) {
             if (i > 0) query << ',';
-            query << '$' << (i + 3);
-            p.append(symbols_[i]);
+            query << txn.quote(symbols_[i]);
         }
         query << ") ";
         if (!timeframe_.empty()) {
-            query << "AND timeframe = $" << (symbols_.size() + 3) << ' ';
-            p.append(timeframe_);
+            query << "AND timeframe = " << txn.quote(timeframe_) << ' ';
         }
         query << "ORDER BY timestamp ASC";
 
-        auto result = txn.exec(query.str(), p);
+        auto result = txn.exec(query.str());
         txn.commit();
 
         // #region agent log
@@ -176,9 +173,7 @@ void DAdapter::stop() {
     if (worker_thread_.joinable()) {
         worker_thread_.join();
     }
-    if (conn_ && conn_->is_open()) {
-        conn_->close();
-    }
+    conn_.reset();
     std::cout << "[DAdapter] Stopped" << std::endl;
 }
 

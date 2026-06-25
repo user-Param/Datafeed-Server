@@ -50,7 +50,7 @@ std::string Router::path_to_regex(const std::string& path) const {
 
 std::optional<http::response<http::string_body>> Router::handle_request(const http::request<http::string_body>& req) const {
     std::string target(req.target());
-    std::string method = req.method_string();
+    std::string method(req.method_string());
 
     for (const auto& route : routes_) {
         if (route.method != method) {
