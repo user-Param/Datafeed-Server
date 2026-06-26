@@ -1,4 +1,5 @@
 #include "live_source.h"
+#include "../metrics/metrics_collector.h"
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -12,6 +13,10 @@ void live_source::set_db_adapter(std::shared_ptr<datafeed::SAdapter> adapter,
     std::lock_guard<std::mutex> lock(db_mutex_);
     db_ = std::move(adapter);
     instance_id_ = instance_id;
+}
+
+void live_source::set_collector(MetricsCollector* collector) {
+    collector_ = collector;
 }
 
 void live_source::register_feed_instance(const std::string& exchange) {
@@ -118,6 +123,11 @@ void live_source::stop() {
 void live_source::on_market_data(const MarketData& data) {
     touch_feed_instance(data.timestamp);
 
+    if (collector_) {
+        collector_->onMessageReceived();
+        collector_->onTick();
+    }
+
     nlohmann::json j;
     j["topic"] = "ticker_";
     j["symbol"] = data.symbol;
@@ -130,9 +140,16 @@ void live_source::on_market_data(const MarketData& data) {
 }
 
 void live_source::switch_exchange(ExchangeType type, const std::vector<std::string>& symbols) {
+    if (collector_) {
+        collector_->onExchangeDisconnected(current_exchange_);
+    }
+
     current_exchange_ = (type == ExchangeType::BINANCE ? "BINANCE" :
                          type == ExchangeType::JUPITER ? "JUPITER" : "BIRDEYE");
     register_feed_instance(current_exchange_);
+    if (collector_) {
+        collector_->onExchangeConnected(current_exchange_);
+    }
 
     std::cout << "[LiveSource] Switching exchange to " << current_exchange_ << std::endl;
 

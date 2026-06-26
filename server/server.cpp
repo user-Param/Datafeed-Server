@@ -7,14 +7,30 @@
 // API layer
 #include "../api/router/router.hpp"
 #include "../api/controllers/FeedController.hpp"
+#include "../api/controllers/DashboardController.hpp"
+#include "../api/controllers/MonitorController.hpp"
+#include "../api/controllers/AlertsController.hpp"
+#include "../api/controllers/ConfigController.hpp"
+#include "../api/controllers/SearchController.hpp"
 #include "../api/services/FeedService.hpp"
 #include "../api/services/ClientService.hpp"
+#include "../api/services/MonitorService.hpp"
+#include "../api/services/AlertsService.hpp"
+#include "../api/services/ConfigService.hpp"
+#include "../api/services/SearchService.hpp"
 #include "../sadapter.h"
+#include "../metrics/metrics_collector.h"
+#include "../metrics/state_manager.h"
+#include "../metrics/snapshot_converter.h"
+#include "../metrics/weekly_rollup.h"
 
 #include <boost/beast/version.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
@@ -61,7 +77,9 @@ static std::string db_connection_string() {
 }
 
 static std::shared_ptr<api::router::Router> build_router(
-    std::shared_ptr<datafeed::SAdapter> sadapter)
+    std::shared_ptr<datafeed::SAdapter> sadapter,
+    StateManager& state_manager,
+    MetricsCollector& collector)
 {
     auto router = std::make_shared<api::router::Router>();
     auto feedService    = std::make_shared<api::services::FeedService>(sadapter);
@@ -76,7 +94,6 @@ static std::shared_ptr<api::router::Router> build_router(
     // ── Client routes ────────────────────────────────────
     auto clientService = std::make_shared<api::services::ClientService>(sadapter);
 
-    // GET /api/v1/clients  — list all
     router->add_route("GET", "/api/v1/clients",
         [clientService](const http::request<http::string_body>& req,
                         const std::smatch&) {
@@ -101,7 +118,6 @@ static std::shared_ptr<api::router::Router> build_router(
             return res;
         });
 
-    // GET /api/v1/clients/:id
     router->add_route("GET", "/api/v1/clients/:id",
         [clientService](const http::request<http::string_body>& req,
                         const std::smatch& match) {
@@ -132,7 +148,6 @@ static std::shared_ptr<api::router::Router> build_router(
             return res;
         });
 
-    // POST /api/v1/clients
     router->add_route("POST", "/api/v1/clients",
         [clientService](const http::request<http::string_body>& req,
                         const std::smatch&) {
@@ -145,7 +160,6 @@ static std::shared_ptr<api::router::Router> build_router(
                 if (body.contains("auth_subject")) dto.auth_subject = body["auth_subject"].get<std::string>();
                 if (body.contains("ip_address"))   dto.ip_address   = body["ip_address"].get<std::string>();
                 if (body.contains("user_agent"))   dto.user_agent   = body["user_agent"].get<std::string>();
-
                 auto created = clientService->createClient(dto);
                 if (!created) {
                     http::response<http::string_body> res{http::status::internal_server_error, req.version()};
@@ -182,7 +196,6 @@ static std::shared_ptr<api::router::Router> build_router(
             }
         });
 
-    // DELETE /api/v1/clients/:id
     router->add_route("DELETE", "/api/v1/clients/:id",
         [clientService](const http::request<http::string_body>& req,
                         const std::smatch& match) {
@@ -196,6 +209,199 @@ static std::shared_ptr<api::router::Router> build_router(
             res.body() = ok ? "" : R"({"error":"client not found"})";
             res.prepare_payload();
             return res;
+        });
+
+    // ── Monitoring Services & Controllers ────────────────
+    auto monitorService = std::make_shared<api::services::MonitorService>(
+        sadapter, state_manager, collector);
+    auto monitorController = std::make_shared<api::controllers::MonitorController>(monitorService);
+    auto dashboardController = std::make_shared<api::controllers::DashboardController>(monitorService);
+
+    // Dashboard
+    router->add_route("GET", "/api/v1/dashboard",
+        [dashboardController](const http::request<http::string_body>& req, const std::smatch&) {
+            return dashboardController->handleGetDashboard(req);
+        });
+
+    // ── Metrics ──────────────────────────────────────────
+    router->add_route("GET", "/api/v1/metrics/live",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetLiveMetrics(req);
+        });
+    router->add_route("GET", "/api/v1/metrics/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetHistoryMetrics(req);
+        });
+
+    // ── Performance ──────────────────────────────────────
+    router->add_route("GET", "/api/v1/performance/live",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetLivePerformance(req);
+        });
+    router->add_route("GET", "/api/v1/performance/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetHistoryPerformance(req);
+        });
+
+    // ── Throughput ────────────────────────────────────────
+    router->add_route("GET", "/api/v1/throughput/live",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetLiveThroughput(req);
+        });
+    router->add_route("GET", "/api/v1/throughput/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetHistoryThroughput(req);
+        });
+
+    // ── Feed (live/history) ───────────────────────────────
+    router->add_route("GET", "/api/v1/feed/live",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetLiveFeed(req);
+        });
+    router->add_route("GET", "/api/v1/feed/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetHistoryFeed(req);
+        });
+
+    // ── Exchanges ─────────────────────────────────────────
+    router->add_route("GET", "/api/v1/exchanges",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetExchanges(req);
+        });
+    router->add_route("GET", "/api/v1/exchange/:exchange",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch& match) {
+            return monitorController->handleGetExchange(req, match[1].str());
+        });
+    router->add_route("GET", "/api/v1/exchange/:exchange/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch& match) {
+            return monitorController->handleGetExchangeHistory(req, match[1].str());
+        });
+
+    // ── Queues ────────────────────────────────────────────
+    router->add_route("GET", "/api/v1/queues/live",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetLiveQueues(req);
+        });
+    router->add_route("GET", "/api/v1/queues/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetHistoryQueues(req);
+        });
+
+    // ── Network ───────────────────────────────────────────
+    router->add_route("GET", "/api/v1/network/live",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetLiveNetwork(req);
+        });
+    router->add_route("GET", "/api/v1/network/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetHistoryNetwork(req);
+        });
+
+    // ── Database ──────────────────────────────────────────
+    router->add_route("GET", "/api/v1/database/live",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetLiveDatabase(req);
+        });
+    router->add_route("GET", "/api/v1/database/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetHistoryDatabase(req);
+        });
+
+    // ── System ────────────────────────────────────────────
+    router->add_route("GET", "/api/v1/system/live",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetLiveSystem(req);
+        });
+    router->add_route("GET", "/api/v1/system/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetHistorySystem(req);
+        });
+
+    // ── Sessions ──────────────────────────────────────────
+    router->add_route("GET", "/api/v1/sessions/live",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetLiveSessions(req);
+        });
+    router->add_route("GET", "/api/v1/sessions/history",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetHistorySessions(req);
+        });
+
+    // ── Analytics ─────────────────────────────────────────
+    router->add_route("GET", "/api/v1/analytics",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetAnalytics(req);
+        });
+
+    // ── Timeline ──────────────────────────────────────────
+    router->add_route("GET", "/api/v1/timeline",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetTimeline(req);
+        });
+
+    // ── Dependencies ──────────────────────────────────────
+    router->add_route("GET", "/api/v1/dependencies",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetDependencies(req);
+        });
+
+    // ── Topology ──────────────────────────────────────────
+    router->add_route("GET", "/api/v1/topology",
+        [monitorController](const http::request<http::string_body>& req, const std::smatch&) {
+            return monitorController->handleGetTopology(req);
+        });
+
+    // ── Alerts ────────────────────────────────────────────
+    auto alertsService = std::make_shared<api::services::AlertsService>(sadapter);
+    auto alertsController = std::make_shared<api::controllers::AlertsController>(alertsService);
+
+    router->add_route("GET", "/api/v1/alerts",
+        [alertsController](const http::request<http::string_body>& req, const std::smatch&) {
+            return alertsController->handleGetAlerts(req);
+        });
+    router->add_route("POST", "/api/v1/alerts/:id/ack",
+        [alertsController](const http::request<http::string_body>& req, const std::smatch& match) {
+            return alertsController->handleAcknowledgeAlert(req, match[1].str());
+        });
+    router->add_route("GET", "/api/v1/alerts/history",
+        [alertsController](const http::request<http::string_body>& req, const std::smatch&) {
+            return alertsController->handleGetAlertHistory(req);
+        });
+
+    // ── Audit ─────────────────────────────────────────────
+    router->add_route("GET", "/api/v1/audit",
+        [alertsController](const http::request<http::string_body>& req, const std::smatch&) {
+            return alertsController->handleGetAudit(req);
+        });
+
+    // ── Config ────────────────────────────────────────────
+    auto configService = std::make_shared<api::services::ConfigService>(sadapter);
+    auto configController = std::make_shared<api::controllers::ConfigController>(configService);
+
+    router->add_route("GET", "/api/v1/config",
+        [configController](const http::request<http::string_body>& req, const std::smatch&) {
+            return configController->handleGetConfig(req);
+        });
+    router->add_route("PUT", "/api/v1/config",
+        [configController](const http::request<http::string_body>& req, const std::smatch&) {
+            return configController->handlePutConfig(req);
+        });
+    router->add_route("GET", "/api/v1/thresholds",
+        [configController](const http::request<http::string_body>& req, const std::smatch&) {
+            return configController->handleGetThresholds(req);
+        });
+    router->add_route("PUT", "/api/v1/thresholds",
+        [configController](const http::request<http::string_body>& req, const std::smatch&) {
+            return configController->handlePutThresholds(req);
+        });
+
+    // ── Search ────────────────────────────────────────────
+    auto searchService = std::make_shared<api::services::SearchService>(sadapter);
+    auto searchController = std::make_shared<api::controllers::SearchController>(searchService);
+
+    router->add_route("GET", "/api/v1/search",
+        [searchController](const http::request<http::string_body>& req, const std::smatch&) {
+            return searchController->handleSearch(req);
         });
 
     // ── Health check ─────────────────────────────────────
@@ -292,6 +498,8 @@ void websocket_session::do_read()
 std::vector<std::string> websocket_session::extract_topics(const std::string &msg)
 {
     std::vector<std::string> topics;
+
+    // Market data topics
     if (msg.find("ticker") != std::string::npos)
         topics.push_back("ticker_");
     if (msg.find("price") != std::string::npos)
@@ -300,12 +508,40 @@ std::vector<std::string> websocket_session::extract_topics(const std::string &ms
         topics.push_back("bid_");
     if (msg.find("ask") != std::string::npos)
         topics.push_back("ask_");
+
+    // Monitoring topics
+    if (msg.find("dashboard") != std::string::npos)
+        topics.push_back("dashboard");
+    if (msg.find("metrics") != std::string::npos)
+        topics.push_back("metrics");
+    if (msg.find("performance") != std::string::npos)
+        topics.push_back("performance");
+    if (msg.find("exchange") != std::string::npos)
+        topics.push_back("exchange");
+    if (msg.find("system") != std::string::npos)
+        topics.push_back("system");
+    if (msg.find("network") != std::string::npos)
+        topics.push_back("network");
+    if (msg.find("feed") != std::string::npos)
+        topics.push_back("feed");
+    if (msg.find("queues") != std::string::npos)
+        topics.push_back("queues");
+
+    // "all" subscribes to everything
     if (msg.find("all") != std::string::npos)
     {
         topics.push_back("ticker_");
         topics.push_back("price_");
         topics.push_back("bid_");
         topics.push_back("ask_");
+        topics.push_back("dashboard");
+        topics.push_back("metrics");
+        topics.push_back("performance");
+        topics.push_back("exchange");
+        topics.push_back("system");
+        topics.push_back("network");
+        topics.push_back("feed");
+        topics.push_back("queues");
     }
     return topics;
 }
@@ -651,8 +887,49 @@ int main(int argc, char *argv[])
     // }
     // #endregion
 
+    // ── Metrics Collector, State Manager & Weekly Rollup ──
+    MetricsCollector collector;
+    StateManager state_manager(collector);
+    std::unique_ptr<WeeklyRollup> weekly_rollup;
+
+    if (db_connected) {
+        state_manager.setSummaryCallback([sadapter](const FeedMetricsSnapshot& summary) {
+            auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+
+            auto db_snapshot = snapshot_converter::to_db_snapshot(summary, "live-1", now);
+            if (!sadapter->create_feed_metrics_snapshot(db_snapshot)) {
+                std::cerr << "[Monitor] Failed to persist 15-min summary" << std::endl;
+                return;
+            }
+
+            for (const auto& entry : snapshot_converter::to_exchange_entries(summary, "live-1", now)) {
+                sadapter->create_exchange_metrics_entry(entry);
+            }
+
+            sadapter->create_queue_entry(
+                snapshot_converter::to_queue_entry(summary, "live-1", now));
+
+            sadapter->create_system_metrics_entry(
+                snapshot_converter::to_system_entry(summary, "live-1", now));
+
+            sadapter->create_network_metrics_entry(
+                snapshot_converter::to_network_entry(summary, "live-1", now));
+
+            sadapter->create_database_metrics_entry(
+                snapshot_converter::to_database_entry(summary, "live-1", now));
+        });
+
+        state_manager.start();
+        std::cout << "[Server] StateManager started (15-min aggregation)." << std::endl;
+
+        weekly_rollup = std::make_unique<WeeklyRollup>(sadapter, "live-1");
+        weekly_rollup->start();
+        std::cout << "[Server] WeeklyRollup started." << std::endl;
+    }
+
     // ── API Router ────────────────────────────────────────
-    auto router = build_router(sadapter);
+    auto router = build_router(sadapter, state_manager, collector);
 
     // ── Session manager & data sources ───────────────────
     net::io_context ioc{threads};
@@ -662,11 +939,95 @@ int main(int argc, char *argv[])
     auto backtest  = std::make_shared<backtest_source>(manager);
 
     live->set_db_adapter(sadapter, "live-1");
+    live->set_collector(&collector);
     backtest->set_db_adapter(sadapter, "backtest-1");
 
     g_live_source = live;
     g_backtest_source = backtest;
     live->start();
+
+    // ── WebSocket Monitoring Broadcast ────────────────────
+    std::function<void()> start_monitor_broadcast;
+    auto monitor_timer = std::make_shared<net::steady_timer>(ioc);
+    start_monitor_broadcast = [&start_monitor_broadcast, monitor_timer, manager, &state_manager]() {
+        monitor_timer->expires_after(std::chrono::seconds(1));
+        monitor_timer->async_wait([&start_monitor_broadcast, monitor_timer, manager, &state_manager](beast::error_code ec) {
+            if (ec) return;
+            auto s = state_manager.getLiveSnapshot();
+
+            nlohmann::json dash;
+            dash["type"] = "dashboard";
+            dash["cpu_usage"] = s.cpu_usage_percent;
+            dash["memory_rss"] = s.memory_rss;
+            dash["thread_count"] = s.thread_count;
+            dash["uptime_seconds"] = s.uptime_seconds;
+            dash["health_score"] = s.feed_health_score;
+            manager->broadcast_to_topic("dashboard", dash.dump());
+
+            nlohmann::json live_metrics;
+            live_metrics["type"] = "metrics";
+            live_metrics["cpu"] = s.cpu_usage_percent;
+            live_metrics["memory"] = s.memory_rss;
+            live_metrics["threads"] = s.thread_count;
+            live_metrics["uptime"] = s.uptime_seconds;
+            manager->broadcast_to_topic("metrics", live_metrics.dump());
+
+            nlohmann::json live_perf;
+            live_perf["type"] = "performance";
+            for (const auto& [cat, stats] : s.latency_stats) {
+                live_perf[std::to_string(static_cast<int>(cat))] = {
+                    {"avg", stats.average}, {"p50", stats.p50},
+                    {"p95", stats.p95}, {"p99", stats.p99}, {"count", stats.count}
+                };
+            }
+            manager->broadcast_to_topic("performance", live_perf.dump());
+
+            nlohmann::json live_ex;
+            live_ex["type"] = "exchange";
+            for (const auto& [name, es] : s.exchange_stats) {
+                nlohmann::json e;
+                e["connected"] = es.connected;
+                e["uptime_seconds"] = es.uptime_seconds;
+                e["latency_ms"] = es.exchange_latency_ms;
+                e["messages_received"] = es.messages_received;
+                live_ex[name] = e;
+            }
+            manager->broadcast_to_topic("exchange", live_ex.dump());
+
+            nlohmann::json live_sys;
+            live_sys["type"] = "system";
+            live_sys["cpu"] = s.cpu_usage_percent;
+            live_sys["memory"] = s.memory_rss;
+            live_sys["peak_rss"] = s.peak_rss;
+            live_sys["threads"] = s.thread_count;
+            live_sys["uptime"] = s.uptime_seconds;
+            manager->broadcast_to_topic("system", live_sys.dump());
+
+            nlohmann::json live_net;
+            live_net["type"] = "network";
+            live_net["bandwidth_bps"] = s.network_bandwidth_bps;
+            live_net["socket_rtt_ms"] = s.socket_rtt_ms;
+            manager->broadcast_to_topic("network", live_net.dump());
+
+            nlohmann::json live_feed;
+            live_feed["type"] = "feed";
+            live_feed["health_score"] = s.feed_health_score;
+            live_feed["packet_drops"] = s.packet_drops;
+            live_feed["stale"] = s.stale_feed;
+            manager->broadcast_to_topic("feed", live_feed.dump());
+
+            nlohmann::json live_queues;
+            live_queues["type"] = "queues";
+            live_queues["incoming"] = s.incoming_queue_depth;
+            live_queues["outgoing"] = s.outgoing_queue_depth;
+            live_queues["overflow"] = s.queue_overflow_count;
+            live_queues["backpressure"] = s.queue_backpressure;
+            manager->broadcast_to_topic("queues", live_queues.dump());
+
+            start_monitor_broadcast();
+        });
+    };
+    start_monitor_broadcast();
 
     std::make_shared<listener>(ioc, tcp::endpoint{address, port}, manager, router)->run();
 
@@ -688,6 +1049,8 @@ int main(int argc, char *argv[])
     for (auto &t : v)
         t.join();
 
+    state_manager.stop();
+    if (weekly_rollup) weekly_rollup->stop();
     if (g_live_source) g_live_source->stop();
     if (g_backtest_source) g_backtest_source->stop_replay();
     sadapter->disconnect();
