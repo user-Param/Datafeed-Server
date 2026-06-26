@@ -59,7 +59,10 @@ std::optional<dto::FeedStatusResponse> FeedService::getFeedStatus() {
 
         return std::nullopt;
     } catch (const std::exception& e) {
-        std::cerr << "Error getting feed status: " << e.what() << std::endl;
+        std::string msg = e.what();
+        if (msg.find("does not exist") == std::string::npos) {
+            std::cerr << "Error getting feed status: " << msg << std::endl;
+        }
         return std::nullopt;
     }
 }

@@ -792,7 +792,13 @@ std::vector<FeedInstance> SAdapter::get_feed_instances_by_condition(const std::s
             out.push_back(f);
         }
         txn.commit();
-    } catch (const std::exception& e) { std::cerr << "get_feed_instances: " << e.what() << "\n"; }
+    } catch (const std::exception& e) {
+        std::string msg = e.what();
+        // Suppress "relation does not exist" - schema may not be applied yet
+        if (msg.find("does not exist") == std::string::npos) {
+            std::cerr << "get_feed_instances: " << msg << "\n";
+        }
+    }
     return out;
 }
 
