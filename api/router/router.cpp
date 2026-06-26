@@ -52,12 +52,19 @@ std::optional<http::response<http::string_body>> Router::handle_request(const ht
     std::string target(req.target());
     std::string method(req.method_string());
 
+    // Strip query string for route matching
+    std::string path = target;
+    auto qpos = path.find('?');
+    if (qpos != std::string::npos) {
+        path = path.substr(0, qpos);
+    }
+
     for (const auto& route : routes_) {
         if (route.method != method) {
             continue;
         }
         std::smatch match;
-        if (std::regex_match(target, match, route.regex)) {
+        if (std::regex_match(path, match, route.regex)) {
             return route.handler(req, match);
         }
     }

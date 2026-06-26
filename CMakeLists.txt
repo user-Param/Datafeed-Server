@@ -53,18 +53,37 @@ add_executable(datafeed
     ../broker/src/adapter/eadapter.cpp
     sadapter.cpp
 
-
     ../api/router/router.cpp
     ../api/controllers/FeedController.cpp
+    ../api/controllers/DashboardController.cpp
+    ../api/controllers/MonitorController.cpp
+    ../api/controllers/AlertsController.cpp
+    ../api/controllers/ConfigController.cpp
+    ../api/controllers/SearchController.cpp
     ../api/services/FeedService.cpp
     ../api/services/ClientService.cpp
-
-
+    ../api/services/MonitorService.cpp
+    ../api/services/AlertsService.cpp
+    ../api/services/ConfigService.cpp
+    ../api/services/SearchService.cpp
 
     ../adapters/dadapter/dadapter.cpp
 
-
-
+    metrics/metrics_collector.cpp
+    metrics/latency_tracker.cpp
+    metrics/throughput_tracker.cpp
+    metrics/system_monitor.cpp
+    metrics/exchange_monitor.cpp
+    metrics/queue_monitor.cpp
+    metrics/feed_health_monitor.cpp
+    metrics/session_monitor.cpp
+    metrics/network_monitor.cpp
+    metrics/database_monitor.cpp
+    metrics/snapshot_scheduler.cpp
+    metrics/snapshot_converter.cpp
+    metrics/metric_aggregator.cpp
+    metrics/state_manager.cpp
+    metrics/weekly_rollup.cpp
 
     ../broker/src/exchange/exchange1.cpp
     ../broker/src/exchange/exchange2.cpp
@@ -115,6 +134,7 @@ target_link_libraries(eadapter
 target_include_directories(datafeed PRIVATE 
     ${Boost_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/metrics
     nlohmann_json::nlohmann_json
     )
 

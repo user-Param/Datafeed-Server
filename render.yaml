@@ -14,4 +14,6 @@ services:
         value: true
       - key: EXCHANGE
         value: BINANCE
+      - key: DATABASE_URL
+        sync: false
     healthCheckPath: /health

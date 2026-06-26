@@ -9,10 +9,13 @@
 #include "../sadapter.h"
 #include <mutex>
 
+class MetricsCollector;
+
 class live_source {
 public:
     live_source(std::shared_ptr<session_manager> manager);
     void set_db_adapter(std::shared_ptr<datafeed::SAdapter> adapter, const std::string& instance_id);
+    void set_collector(MetricsCollector* collector);
     void start();
     void stop();
     void on_market_data(const MarketData& data);
@@ -26,6 +29,7 @@ private:
 
     std::shared_ptr<session_manager> manager_;
     std::shared_ptr<datafeed::SAdapter> db_;
+    MetricsCollector* collector_{nullptr};
     std::string instance_id_;
     std::string current_exchange_{"BINANCE"};
     std::mutex db_mutex_;
