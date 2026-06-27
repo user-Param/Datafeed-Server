@@ -21,7 +21,13 @@ void live_source::set_collector(MetricsCollector* collector) {
 
 void live_source::register_feed_instance(const std::string& exchange) {
     std::lock_guard<std::mutex> lock(db_mutex_);
-    if (!db_ || !db_->is_connected() || instance_id_.empty()) return;
+    if (!db_ || !db_->is_connected() || instance_id_.empty()) {
+        std::cout << "[LiveSource] Cannot register feed instance: db="
+                  << (db_ ? "connected" : "null")
+                  << ", instance_id=" << instance_id_
+                  << std::endl;
+        return;
+    }
 
     datafeed::FeedInstance fi;
     fi.instance_id = instance_id_;
@@ -35,22 +41,15 @@ void live_source::register_feed_instance(const std::string& exchange) {
     auto existing = db_->get_feed_instance_by_id(instance_id_);
     if (existing) {
         db_->update_feed_instance(fi);
+        std::cout << "[LiveSource] Updated feed instance: exchange=" << exchange
+                  << ", instance_id=" << instance_id_
+                  << ", status=connected" << std::endl;
     } else {
         db_->create_feed_instance(fi);
+        std::cout << "[LiveSource] Created feed instance: exchange=" << exchange
+                  << ", instance_id=" << instance_id_
+                  << ", status=connected" << std::endl;
     }
-
-    // #region agent log
-    // Disabled hardcoded debug log for deployment compatibility
-    // {
-    //     std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
-    //     dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"B\",\"location\":\"live_source.cpp:register_feed_instance\","
-    //         << "\"message\":\"feed instance registered\",\"data\":{\"instance_id\":\"" << instance_id_
-    //         << "\",\"exchange\":\"" << exchange << "\"},\"timestamp\":"
-    //         << std::chrono::duration_cast<std::chrono::milliseconds>(
-    //                std::chrono::system_clock::now().time_since_epoch()).count()
-    //         << "}\n";
-    // }
-    // #endregion
 }
 
 void live_source::touch_feed_instance(uint64_t tick_ts) {
@@ -73,6 +72,7 @@ void live_source::start() {
 
     const char* ex_env = std::getenv("EXCHANGE");
     current_exchange_ = (ex_env && *ex_env) ? ex_env : "BINANCE";
+    std::cout << "[LiveSource] Exchange=" << current_exchange_ << std::endl;
 
     register_feed_instance(current_exchange_);
 
@@ -87,6 +87,9 @@ void live_source::start() {
         symbols = {"BTCUSDT", "ETHUSDT", "SOLUSDT"};
     else
         symbols = {"BTC", "ETH", "SOL"};
+
+    std::cout << "[LiveSource] Creating EAdapter for " << symbols.size() << " symbols" << std::endl;
+    for (const auto& s : symbols) std::cout << "  symbol=" << s << std::endl;
 
     std::lock_guard<std::mutex> lock(adapter_mutex_);
     adapter_ = std::make_shared<EAdapter>(exType);
@@ -108,7 +111,10 @@ void live_source::start() {
             std::lock_guard<std::mutex> lock(adapter_mutex_);
             a = adapter_;
         }
-        if (a) a->run();
+        if (a) {
+            std::cout << "[LiveSource] Starting EAdapter in background thread" << std::endl;
+            a->run();
+        }
     }).detach();
 }
 
@@ -121,6 +127,7 @@ void live_source::stop() {
 }
 
 void live_source::on_market_data(const MarketData& data) {
+    static uint64_t last_log = 0;
     touch_feed_instance(data.timestamp);
 
     if (collector_) {
@@ -137,6 +144,21 @@ void live_source::on_market_data(const MarketData& data) {
     j["timestamp"] = data.timestamp;
 
     manager_->broadcast_to_topic("ticker_", j.dump());
+
+    // Log first market data and then every 1000th tick
+    uint64_t now = data.timestamp;
+    if (last_log == 0) {
+        std::cout << "[LiveSource] First market data: symbol=" << data.symbol
+                  << " price=" << data.price
+                  << " bid=" << data.bid << " ask=" << data.ask
+                  << std::endl;
+    } else if (last_log % 1000 == 0) {
+        std::cout << "[LiveSource] Market data: symbol=" << data.symbol
+                  << " price=" << data.price
+                  << " (total ticks ~" << last_log << ")"
+                  << std::endl;
+    }
+    last_log++;
 }
 
 void live_source::switch_exchange(ExchangeType type, const std::vector<std::string>& symbols) {

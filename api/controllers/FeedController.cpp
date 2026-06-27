@@ -38,6 +38,11 @@ FeedController::handleGetStatus(const boost::beast::http::request<boost::beast::
         {"status", status->status},
         {"uptime", status->uptime}
     };
+    if (status->status == "degraded") {
+        j["database"] = "disconnected";
+        j["feed_instances"] = 0;
+        j["reason"] = "database unavailable";
+    }
     res.body() = j.dump();
     res.prepare_payload();
     return res;

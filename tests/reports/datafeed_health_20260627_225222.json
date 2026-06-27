@@ -1,0 +1,404 @@
+{
+  "timestamp": "2026-06-27T17:18:04.928069+00:00",
+  "target": "https://datafeed.fun",
+  "duration_seconds": 257.88,
+  "pipeline": {
+    "stages": [
+      {
+        "name": "Service",
+        "passed": true,
+        "detail": "Status=200, response={'db': 'connected', 'feed_instances': 1, 'status': 'ok'}",
+        "diagnostics": []
+      },
+      {
+        "name": "Exchange",
+        "passed": true,
+        "detail": "0 exchange(s), connected=False",
+        "diagnostics": []
+      },
+      {
+        "name": "Feed Manager",
+        "passed": true,
+        "detail": "Status=200, response={'exchange': 'BINANCE', 'instance_id': 'live-1', 'status': 'connected', 'uptime': 0}",
+        "diagnostics": []
+      },
+      {
+        "name": "Parser",
+        "passed": true,
+        "detail": "Status=200, parse_failures=0, corrupted_packets=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Normalizer",
+        "passed": true,
+        "detail": "Status=200, ticks/sec=0.0, trades/sec=0.0",
+        "diagnostics": []
+      },
+      {
+        "name": "Metrics Collector",
+        "passed": true,
+        "detail": "Status=200, keys=['database', 'exchanges', 'feed', 'network', 'performance', 'queues', 'sessions', 'system']",
+        "diagnostics": []
+      },
+      {
+        "name": "Dashboard",
+        "passed": true,
+        "detail": "Status=200, health_score=100.0, has_sections",
+        "diagnostics": []
+      },
+      {
+        "name": "Database",
+        "passed": true,
+        "detail": "Status=200, status=unknown, connections=0, writes=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Sessions",
+        "passed": true,
+        "detail": "Status=200, active_sessions=0, active_clients=0, total_connections=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Subscriptions",
+        "passed": true,
+        "detail": "active_subscriptions=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Market Data",
+        "passed": false,
+        "detail": "WebSocket subscribed but received zero market-data messages",
+        "diagnostics": [
+          "Total WS messages: 225",
+          "Topics subscribed: ['ticker_', 'price_', 'trade_', 'orderbook_', 'dashboard', 'metrics', 'performance', 'exchange', 'system', 'network', 'feed', 'queues']"
+        ]
+      },
+      {
+        "name": "Consistency",
+        "passed": true,
+        "detail": "REST and WebSocket metrics in sync",
+        "diagnostics": []
+      }
+    ],
+    "passed_count": 11,
+    "failed_count": 1,
+    "all_passed": false
+  },
+  "feed": {
+    "alive": false
+  },
+  "latency": {
+    "avg": 646.1651621159211,
+    "p50": 795.0910830040812,
+    "p90": 923.1584579974879,
+    "p95": 1024.0809580063797,
+    "p99": 1330.3479160022107,
+    "max": 1619.0723340041586,
+    "min": 263.3613330035587
+  },
+  "mismatches": [],
+  "health_score": 0,
+  "production_ready": false,
+  "dashboard": {
+    "uptime": 22.000615512,
+    "health_score": 100.0,
+    "total_ticks": 0,
+    "total_messages": 0,
+    "total_packets": 0,
+    "messages_per_second": 0,
+    "ticks_per_second": 0,
+    "packets_per_second": 0,
+    "active_sessions": 0,
+    "active_subscriptions": 0,
+    "cpu": 258.4516129032258,
+    "memory_rss": 19927040,
+    "queue_depth": 0,
+    "deltas": {
+      "total_ticks": 0,
+      "total_messages": 0,
+      "total_packets": 0,
+      "bytes_received": 0
+    }
+  },
+  "websocket": {
+    "total_messages": 225,
+    "market_data_messages": 0,
+    "dashboard_snapshots": 113,
+    "symbols_seen": [],
+    "topics_subscribed": [
+      "ticker_",
+      "price_",
+      "trade_",
+      "orderbook_",
+      "dashboard",
+      "metrics",
+      "performance",
+      "exchange",
+      "system",
+      "network",
+      "feed",
+      "queues"
+    ],
+    "subscriptions_confirmed": false,
+    "exchange_switched": true,
+    "live_mode_enabled": true,
+    "message_types": [
+      "performance",
+      "queues",
+      "exchange",
+      "network",
+      "system",
+      "feed",
+      "metrics",
+      "dashboard"
+    ],
+    "message_rate": 7.76,
+    "market_data_rate": 0.0,
+    "avg_interval_ms": 129.37,
+    "bytes_received": 29090,
+    "bytes_sent": 600,
+    "reconnects": 0,
+    "dropped": 0,
+    "duplicates": 0
+  },
+  "resources": {
+    "cpu_avg": 258.45,
+    "cpu_max": 258.45,
+    "memory_rss_avg": 19927040,
+    "memory_rss_max": 19927040,
+    "rss_growth_pct": 0.0,
+    "snapshots": [
+      {
+        "timestamp": 1782580856.6566532,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580859.415929,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580862.036545,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580864.6987572,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580867.361448,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580870.023793,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580872.686622,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580875.3487492,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580878.010992,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580880.673493,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580883.745624,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580886.4081411,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580889.070234,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580891.63287,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580894.292962,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580896.954958,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580899.617512,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580902.28049,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580904.9148328,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580907.6046588,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580910.173391,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580912.827414,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782580915.489523,
+        "cpu": 258.4516129032258,
+        "memory_rss": 19927040,
+        "heap": 1570912,
+        "threads": 4,
+        "uptime": 22.000615512,
+        "queue_depth": 0
+      }
+    ]
+  },
+  "stress_test": {
+    "total_requests": 499,
+    "successful": 251,
+    "failed": 248,
+    "timeouts": 0,
+    "throughput_req_per_sec": 20.33,
+    "failure_rate_pct": 49.7,
+    "avg_latency_ms": 13635.12,
+    "p50_ms": 15525.48,
+    "p95_ms": 15545.6,
+    "p99_ms": 15546.37,
+    "errors": []
+  },
+  "ticks": {
+    "total_ticks": 0,
+    "stale_ticks": 0,
+    "duplicate_ticks": 0,
+    "missing_timestamps": 0,
+    "invalid_prices": 0,
+    "invalid_spreads": 0,
+    "unique_symbols": [],
+    "exchanges": [],
+    "errors": []
+  }
+}

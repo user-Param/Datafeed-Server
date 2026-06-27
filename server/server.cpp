@@ -870,8 +870,20 @@ int main(int argc, char *argv[])
     if (db_connected) {
         std::cout << "[Server] Database connected." << std::endl;
     } else {
-        std::cerr << "[Server] WARNING: Database connection failed. "
-                     "API endpoints that require DB will return errors.\n";
+        std::string conn_info = db_connection_string();
+        // Log connection details without password for diagnostics
+        {
+            std::string safe = conn_info;
+            auto pass_pos = safe.find("password=");
+            if (pass_pos != std::string::npos) {
+                auto end_pos = safe.find(' ', pass_pos);
+                safe.replace(pass_pos, (end_pos == std::string::npos ? safe.size() : end_pos) - pass_pos, "password=****");
+            }
+            std::cerr << "[Server] WARNING: Database connection failed.\n"
+                      << "[Server]   Connection string (sanitized): " << safe << "\n";
+        }
+        std::cerr << "[Server]   Check DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD "
+                     "(or DATABASE_URL / PG*) environment variables.\n";
     }
 
     // #region agent log
@@ -892,6 +904,8 @@ int main(int argc, char *argv[])
     StateManager state_manager(collector);
     std::unique_ptr<WeeklyRollup> weekly_rollup;
 
+    // StateManager always starts — it drives the live snapshot for REST/WS endpoints.
+    // The summary callback (15-min persistence) is only registered when DB is available.
     if (db_connected) {
         state_manager.setSummaryCallback([sadapter](const FeedMetricsSnapshot& summary) {
             auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -920,9 +934,13 @@ int main(int argc, char *argv[])
                 snapshot_converter::to_database_entry(summary, "live-1", now));
         });
 
-        state_manager.start();
-        std::cout << "[Server] StateManager started (15-min aggregation)." << std::endl;
+        std::cout << "[Server] Summary callback registered (15-min persistence)." << std::endl;
+    }
 
+    state_manager.start();
+    std::cout << "[Server] StateManager started (live snapshot every 1s)." << std::endl;
+
+    if (db_connected) {
         weekly_rollup = std::make_unique<WeeklyRollup>(sadapter, "live-1");
         weekly_rollup->start();
         std::cout << "[Server] WeeklyRollup started." << std::endl;
@@ -949,11 +967,37 @@ int main(int argc, char *argv[])
     // ── WebSocket Monitoring Broadcast ────────────────────
     std::function<void()> start_monitor_broadcast;
     auto monitor_timer = std::make_shared<net::steady_timer>(ioc);
-    start_monitor_broadcast = [&start_monitor_broadcast, monitor_timer, manager, &state_manager]() {
+    auto pipeline_log_counter = std::make_shared<int>(0);
+    start_monitor_broadcast = [&start_monitor_broadcast, monitor_timer, manager, &state_manager, pipeline_log_counter]() {
         monitor_timer->expires_after(std::chrono::seconds(1));
-        monitor_timer->async_wait([&start_monitor_broadcast, monitor_timer, manager, &state_manager](beast::error_code ec) {
+        monitor_timer->async_wait([&start_monitor_broadcast, monitor_timer, manager, &state_manager, pipeline_log_counter](beast::error_code ec) {
             if (ec) return;
             auto s = state_manager.getLiveSnapshot();
+
+            // Pipeline stage log every 5 seconds
+            (*pipeline_log_counter)++;
+            if (*pipeline_log_counter % 5 == 0) {
+                std::cout << "[Pipeline] tick=" << *pipeline_log_counter
+                          << " msgs/sec=" << s.messages_received_per_sec
+                          << " ticks/sec=" << s.ticks_per_sec
+                          << " pkt/sec=" << s.packets_received_per_sec
+                          << " trades/sec=" << s.trades_per_sec
+                          << " total_msgs=" << (s.total_messages_received + s.total_messages_sent)
+                          << " total_ticks=" << s.total_ticks
+                          << " health=" << s.feed_health_score
+                          << " sessions=" << s.active_sessions
+                          << " subs=" << s.active_subscriptions
+                          << " exchanges=" << s.exchange_stats.size()
+                          << " cpu=" << s.cpu_usage_percent << "%"
+                          << " mem=" << (s.memory_rss / 1024 / 1024) << "MB"
+                          << std::endl;
+
+                // Log callback invocation counts from collector
+                if (s.total_messages_received == 0 && s.total_ticks == 0) {
+                    std::cout << "[Pipeline] WARNING: No market data flowing. "
+                              << "Check exchange connection and feed registration." << std::endl;
+                }
+            }
 
             nlohmann::json dash;
             dash["type"] = "dashboard";

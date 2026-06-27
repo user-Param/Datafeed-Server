@@ -14,18 +14,13 @@ FeedService::FeedService(std::shared_ptr<datafeed::SAdapter> adapter)
 
 std::optional<dto::FeedStatusResponse> FeedService::getFeedStatus() {
     if (!adapter_ || !adapter_->is_connected()) {
-        // #region agent log
-        // Disabled hardcoded debug log for deployment compatibility
-        // {
-        //     std::ofstream dbg("/Users/param/Documents/datafeed/.cursor/debug-627934.log", std::ios::app);
-        //     dbg << "{\"sessionId\":\"627934\",\"hypothesisId\":\"D\",\"location\":\"FeedService.cpp:getFeedStatus\","
-        //         << "\"message\":\"adapter not connected\",\"data\":{},\"timestamp\":"
-        //         << std::chrono::duration_cast<std::chrono::milliseconds>(
-        //                std::chrono::system_clock::now().time_since_epoch()).count()
-        //         << "}\n";
-        // }
-        // #endregion
-        return std::nullopt;
+        std::cout << "[FeedService] Database not connected, returning degraded status" << std::endl;
+        dto::FeedStatusResponse degraded;
+        degraded.instance_id = "";
+        degraded.exchange = "";
+        degraded.status = "degraded";
+        degraded.uptime = 0;
+        return degraded;
     }
 
     try {

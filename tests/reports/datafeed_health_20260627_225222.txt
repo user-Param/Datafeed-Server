@@ -1,0 +1,111 @@
+
+========================================================
+[1m  PROTYPE DATAFEED HEALTH REPORT[0m
+========================================================
+  Timestamp:      2026-06-27T17:18:04.928069+00:00
+  Target:         https://datafeed.fun
+  Duration:       257.9s
+
+
+  [1mPipeline Stages[0m
+  -----------------
+  [92mPASS[0m  Service — Status=200, response={'db': 'connected', 'feed_instances': 1, 'status': 'ok'}
+  [92mPASS[0m  Exchange — 0 exchange(s), connected=False
+  [92mPASS[0m  Feed Manager — Status=200, response={'exchange': 'BINANCE', 'instance_id': 'live-1', 'status': 'connected', 'uptime': 0}
+  [92mPASS[0m  Parser — Status=200, parse_failures=0, corrupted_packets=0
+  [92mPASS[0m  Normalizer — Status=200, ticks/sec=0.0, trades/sec=0.0
+  [92mPASS[0m  Metrics Collector — Status=200, keys=['database', 'exchanges', 'feed', 'network', 'performance', 'queues', 'sessions', 'system']
+  [92mPASS[0m  Dashboard — Status=200, health_score=100.0, has_sections
+  [92mPASS[0m  Database — Status=200, status=unknown, connections=0, writes=0
+  [92mPASS[0m  Sessions — Status=200, active_sessions=0, active_clients=0, total_connections=0
+  [92mPASS[0m  Subscriptions — active_subscriptions=0
+  [91mFAIL[0m  Market Data — WebSocket subscribed but received zero market-data messages
+  [92mPASS[0m  Consistency — REST and WebSocket metrics in sync
+
+
+  [1mLive Feed[0m
+  -----------
+  Messages/sec              0.0
+  Ticks/sec                 0.0
+  Packets/sec               0.0
+  Subscriptions             0
+  Sessions                  0
+  Total Messages            0
+  Total Ticks               0
+  Total Packets             0
+  Bytes Received            0
+  Bytes Transmitted         0
+
+
+  [1mLatency (ms)[0m
+  --------------
+  Average                   646.2 ms
+  P50                       795.1 ms
+  P90                       923.2 ms
+  P95                       1024.1 ms
+  P99                       1330.3 ms
+  Max                       1619.1 ms
+  Min                       263.4 ms
+
+
+  [1mResources[0m
+  -----------
+  CPU (avg/max)             258.5% / 258.5%
+  Memory RSS (avg)          19927040
+  Heap (avg)                1570912
+  Threads (avg)             4
+  RSS Growth                0.0%
+
+
+  [1mWebSocket[0m
+  -----------
+  Total Messages            225
+  Market Data Msgs          0
+  Dashboard Snapshots       113
+  Symbols Seen              []
+  Topics Subscribed         12
+  Subscriptions Confirmed   False
+  Exchange Switched         True
+  Live Mode Enabled         True
+  Message Types             8
+  Message Rate              7.8/s
+  Market Data Rate          0.0/s
+  Avg Interval              129ms
+  Bytes Received            29090
+  Bytes Sent                600
+  Reconnects                0
+  Dropped                   0
+  Duplicates                0
+
+
+  [1mStress Test[0m
+  -------------
+  Total Requests            499
+  Throughput                20.3 req/s
+  Failure Rate              49.7%
+  Avg Latency               13635.1 ms
+  P95                       15545.6 ms
+  P99                       15546.4 ms
+
+
+  [1mProblems Detected[0m
+  -------------------
+  ✓ Dashboard reachable
+  ✓ Database connected
+  ✓ Exchange connection
+  ✓ WebSocket data flow
+  ✗ Market data via WebSocket
+  ✗ Active subscriptions confirmed
+  ✗ No live ticks
+  ✗ Throughput remains zero
+  ✗ No active sessions
+  ✗ No active subscriptions on dashboard
+  ✗ Feed pipeline appears stalled
+
+
+  [1mOverall Health[0m
+  ----------------
+  Health Score              0 / 100
+  Production Ready          NO
+
+========================================================

@@ -1,0 +1,101 @@
+{
+  "test_name": "WebSocket Stream Test",
+  "timestamp": "2026-06-27T21:56:15.844457+00:00",
+  "config": {
+    "ws_url": "wss://datafeed.fun",
+    "rest_base": "https://datafeed.fun",
+    "duration_seconds": 60,
+    "exchange": "BINANCE",
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT"
+    ]
+  },
+  "connection": {
+    "connected": false,
+    "connect_time_utc": "2026-06-27T21:56:15.844457+00:00",
+    "connect_duration_ms": 0,
+    "reconnects": 0,
+    "disconnects": 1
+  },
+  "subscriptions": {
+    "requests_sent": 0,
+    "acknowledgements": 0,
+    "active_on_dashboard": 0,
+    "failed": 0
+  },
+  "messages": {
+    "total": 0,
+    "market_data": 0,
+    "monitoring": 0,
+    "unknown": 0
+  },
+  "symbols": {
+    "BTCUSDT": {
+      "price": 0,
+      "bid": 0,
+      "ask": 0,
+      "updates": 0,
+      "first_timestamp": 0,
+      "last_timestamp": 0
+    },
+    "ETHUSDT": {
+      "price": 0,
+      "bid": 0,
+      "ask": 0,
+      "updates": 0,
+      "first_timestamp": 0,
+      "last_timestamp": 0
+    },
+    "SOLUSDT": {
+      "price": 0,
+      "bid": 0,
+      "ask": 0,
+      "updates": 0,
+      "first_timestamp": 0,
+      "last_timestamp": 0
+    }
+  },
+  "throughput": {
+    "messages_per_sec": 0,
+    "market_data_per_sec": 0,
+    "bytes_per_sec": 0,
+    "total_bytes": 0,
+    "total_packets": 0
+  },
+  "latency": {
+    "avg_interval_ms": 0,
+    "min_interval_ms": 0,
+    "max_interval_ms": 0,
+    "p50_ms": 0,
+    "p95_ms": 0,
+    "p99_ms": 0
+  },
+  "dashboard_comparison": {
+    "dashboard_snapshots": 0,
+    "dashboard_messages_per_sec": 0,
+    "dashboard_packets_per_sec": 0,
+    "dashboard_bytes_per_sec": 0,
+    "dashboard_sessions": 0,
+    "dashboard_subscriptions": 0,
+    "dashboard_feed_health": 0
+  },
+  "diagnostics": [],
+  "errors": [
+    "Connect failed (InvalidURI): https://www.datafeed.fun/ isn't a valid URI: scheme isn't ws or wss"
+  ],
+  "recommendations": [
+    "Check server availability and network connectivity.",
+    "Verify WebSocket URL and port."
+  ],
+  "checks": {
+    "connected": false,
+    "market_data_received": false,
+    "all_symbols_seen": false,
+    "monitoring_received": false,
+    "subscriptions_active": false,
+    "sessions_active": false
+  },
+  "passed": false
+}

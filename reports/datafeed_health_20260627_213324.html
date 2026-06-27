@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROTYPE Datafeed Health Report</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; margin: 20px; color: #333; }
+  .container { max-width: 900px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+  h2 { color: #2c3e50; margin-top: 30px; }
+  table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; }
+  th { background: #f8f9fa; font-weight: 600; }
+  .score { font-size: 2em; text-align: center; padding: 20px; }
+  .ready-yes { color: #28a745; font-weight: bold; }
+  .ready-no { color: #dc3545; font-weight: bold; }
+  .pre { font-family: 'Courier New', monospace; background: #f8f9fa; padding: 15px; border-radius: 5px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-x: auto; }
+  .footer { margin-top: 30px; text-align: center; color: #888; font-size: 0.9em; }
+  .pass { color: #28a745; }
+  .fail { color: #dc3545; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>PROTYPE Datafeed Health Report</h1>
+  <p><strong>Target:</strong> https://datafeed.fun</p>
+  <p><strong>Timestamp:</strong> 2026-06-27T16:00:56.264437+00:00</p>
+  <p><strong>Duration:</strong> 148.5s</p>
+
+  <div class="score">
+    <span>Health Score: <strong style="color:#dc3545">0</strong> / 100</span><br>
+    <span class="ready-no">
+      ❌ NOT Production Ready
+    </span>
+  </div>
+
+  <h2>Pipeline Stages</h2>
+  <table>
+    <tr><th>Stage</th><th>Status</th><th>Detail</th></tr>
+    <tr><td>Service</td><td style='color:#28a745;font-weight:bold'>PASS</td><td>Status=200, response={'db': 'connected', 'feed_instances': 0, 'status': 'ok'}</td></tr>
+<tr><td>Exchange</td><td style='color:#28a745;font-weight:bold'>PASS</td><td>0 exchange(s), connected=False</td></tr>
+<tr><td>Feed Manager</td><td style='color:#dc3545;font-weight:bold'>FAIL</td><td>Status=500, response={'error': 'Unable to get feed status'}</td></tr>
+<tr><td>Parser</td><td style='color:#28a745;font-weight:bold'>PASS</td><td>Status=200, parse_failures=0, corrupted_packets=0</td></tr>
+<tr><td>Normalizer</td><td style='color:#28a745;font-weight:bold'>PASS</td><td>Status=200, ticks/sec=0.0, trades/sec=0.0</td></tr>
+<tr><td>Metrics Collector</td><td style='color:#28a745;font-weight:bold'>PASS</td><td>Status=200, keys=['database', 'exchanges', 'feed', 'network', 'performance', 'queues', 'sessions', 'system']</td></tr>
+<tr><td>Dashboard</td><td style='color:#28a745;font-weight:bold'>PASS</td><td>Status=200, health_score=100.0, has_sections</td></tr>
+<tr><td>Database</td><td style='color:#28a745;font-weight:bold'>PASS</td><td>Status=200, status=unknown, connections=0, writes=0</td></tr>
+<tr><td>Sessions</td><td style='color:#28a745;font-weight:bold'>PASS</td><td>Status=200, active_sessions=0, active_clients=0, total_connections=0</td></tr>
+<tr><td>Subscriptions</td><td style='color:#28a745;font-weight:bold'>PASS</td><td>active_subscriptions=0</td></tr>
+<tr><td>Market Data</td><td style='color:#dc3545;font-weight:bold'>FAIL</td><td>All dashboard metrics remained zero for entire observation period</td></tr>
+
+  </table>
+
+  <h2>Raw Report</h2>
+  <div class="pre"><br>========================================================<br>[1m  PROTYPE DATAFEED HEALTH REPORT[0m<br>========================================================<br>  Timestamp:      2026-06-27T16:00:56.264437+00:00<br>  Target:         https://datafeed.fun<br>  Duration:       148.5s<br><br><br>  [1mPipeline Stages[0m<br>  -----------------<br>  [92mPASS[0m  Service — Status=200, response={'db': 'connected', 'feed_instances': 0, 'status': 'ok'}<br>  [92mPASS[0m  Exchange — 0 exchange(s), connected=False<br>  [91mFAIL[0m  Feed Manager — Status=500, response={'error': 'Unable to get feed status'}<br>  [92mPASS[0m  Parser — Status=200, parse_failures=0, corrupted_packets=0<br>  [92mPASS[0m  Normalizer — Status=200, ticks/sec=0.0, trades/sec=0.0<br>  [92mPASS[0m  Metrics Collector — Status=200, keys=['database', 'exchanges', 'feed', 'network', 'performance', 'queues', 'sessions', 'system']<br>  [92mPASS[0m  Dashboard — Status=200, health_score=100.0, has_sections<br>  [92mPASS[0m  Database — Status=200, status=unknown, connections=0, writes=0<br>  [92mPASS[0m  Sessions — Status=200, active_sessions=0, active_clients=0, total_connections=0<br>  [92mPASS[0m  Subscriptions — active_subscriptions=0<br>  [91mFAIL[0m  Market Data — All dashboard metrics remained zero for entire observation period<br><br><br>  [1mLive Feed[0m<br>  -----------<br>  Messages/sec              0.0<br>  Ticks/sec                 0.0<br>  Packets/sec               0.0<br>  Subscriptions             0<br>  Sessions                  0<br>  Total Messages            0<br>  Total Ticks               0<br>  Total Packets             0<br>  Bytes Received            0<br>  Bytes Transmitted         0<br><br><br>  [1mLatency (ms)[0m<br>  --------------<br>  Average                   676.8 ms<br>  P50                       798.6 ms<br>  P90                       1029.1 ms<br>  P95                       1158.0 ms<br>  P99                       1811.7 ms<br>  Max                       2178.0 ms<br>  Min                       264.4 ms<br><br><br>  [1mResources[0m<br>  -----------<br><br><br>  [1mWebSocket[0m<br>  -----------<br>  Total Messages            0<br>  Market Data Msgs          0<br>  Dashboard Snapshots       0<br>  Symbols Seen              []<br>  Subscriptions Confirmed   False<br>  Message Types             0<br>  Message Rate              0.0/s<br>  Market Data Rate          0.0/s<br>  Avg Interval              0ms<br>  Reconnects                0<br>  Dropped                   0<br>  Duplicates                0<br><br><br>  [1mProblems Detected[0m<br>  -------------------<br>  ✓ Dashboard reachable<br>  ✓ Database connected<br>  ✓ Exchange connection<br>  ✗ WebSocket data flow<br>  ✗ No live ticks<br>  ✗ Throughput remains zero<br>  ✗ No active sessions<br>  ✗ No active subscriptions<br>  ✗ Feed pipeline appears stalled<br><br><br>  [1mOverall Health[0m<br>  ----------------<br>  Health Score              0 / 100<br>  Production Ready          NO<br><br>========================================================</div>
+
+  <div class="footer">Generated by PROTYPE Datafeed Validation Suite</div>
+</div>
+</body>
+</html>

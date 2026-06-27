@@ -28,14 +28,23 @@ void Exchange1::connect() {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     
     try {
+        std::cout << "[Exchange1] Resolving DNS: stream.binance.com:9443" << std::endl;
         tcp::resolver resolver(ioc_);
         auto const results = resolver.resolve("stream.binance.com", "9443");
-        
+        std::cout << "[Exchange1] DNS resolved" << std::endl;
+
+        std::cout << "[Exchange1] TCP connecting..." << std::endl;
         net::connect(ws_.next_layer().next_layer(), results.begin(), results.end());
+        std::cout << "[Exchange1] TCP connected" << std::endl;
+
+        std::cout << "[Exchange1] TLS handshake..." << std::endl;
         ws_.next_layer().handshake(ssl::stream_base::client);
-        
+        std::cout << "[Exchange1] TLS handshake complete" << std::endl;
+
+        std::cout << "[Exchange1] WebSocket handshake: /stream" << std::endl;
         ws_.handshake("stream.binance.com", "/stream");
-        
+        std::cout << "[Exchange1] WebSocket handshake complete" << std::endl;
+
         connected_ = true;
         std::cout << "[Exchange1] Connected to Binance WebSocket" << std::endl;
         reader_thread_ = std::thread(&Exchange1::read_loop, this);
@@ -52,6 +61,7 @@ void Exchange1::subscribe(const std::vector<std::string>& symbols) {
         std::cerr << "[Exchange1] Not connected. Call connect() first." << std::endl;
         return;
     }
+    std::cout << "[Exchange1] Subscribing to " << symbols.size() << " symbols" << std::endl;
     send_subscribe(symbols);
 }
 

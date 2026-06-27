@@ -1,0 +1,338 @@
+{
+  "timestamp": "2026-06-27T15:53:05.968451+00:00",
+  "target": "https://datafeed.fun",
+  "duration_seconds": 232.14,
+  "pipeline": {
+    "stages": [
+      {
+        "name": "Service",
+        "passed": true,
+        "detail": "Status=200, response={'db': 'connected', 'feed_instances': 0, 'status': 'ok'}",
+        "diagnostics": []
+      },
+      {
+        "name": "Exchange",
+        "passed": true,
+        "detail": "0 exchange(s), connected=False",
+        "diagnostics": []
+      },
+      {
+        "name": "Feed Manager",
+        "passed": false,
+        "detail": "Status=500, response={'error': 'Unable to get feed status'}",
+        "diagnostics": []
+      },
+      {
+        "name": "Parser",
+        "passed": true,
+        "detail": "Status=200, parse_failures=0, corrupted_packets=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Normalizer",
+        "passed": true,
+        "detail": "Status=200, ticks/sec=0.0, trades/sec=0.0",
+        "diagnostics": []
+      },
+      {
+        "name": "Metrics Collector",
+        "passed": true,
+        "detail": "Status=200, keys=['database', 'exchanges', 'feed', 'network', 'performance', 'queues', 'sessions', 'system']",
+        "diagnostics": []
+      },
+      {
+        "name": "Dashboard",
+        "passed": true,
+        "detail": "Status=200, health_score=100.0, has_sections",
+        "diagnostics": []
+      },
+      {
+        "name": "Database",
+        "passed": true,
+        "detail": "Status=200, status=unknown, connections=0, writes=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Sessions",
+        "passed": true,
+        "detail": "Status=200, active_sessions=0, active_clients=0, total_connections=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Subscriptions",
+        "passed": true,
+        "detail": "active_subscriptions=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Market Data",
+        "passed": false,
+        "detail": "All dashboard metrics remained zero for entire observation period",
+        "diagnostics": [
+          "No ticks, no messages, no packets flowing"
+        ]
+      }
+    ],
+    "passed_count": 9,
+    "failed_count": 2,
+    "all_passed": false
+  },
+  "feed": {
+    "alive": false
+  },
+  "latency": {
+    "avg": 674.1660129098642,
+    "p50": 791.4608749997569,
+    "p90": 1126.3168749937904,
+    "p95": 1313.5714999953052,
+    "p99": 1657.4220830007107,
+    "max": 1845.743334000872,
+    "min": 264.3339999995078
+  },
+  "mismatches": [],
+  "health_score": 20.0,
+  "production_ready": false,
+  "dashboard": {
+    "uptime": 469.000366252,
+    "health_score": 100.0,
+    "total_ticks": 0,
+    "total_messages": 0,
+    "total_packets": 0,
+    "messages_per_second": 0,
+    "ticks_per_second": 0,
+    "packets_per_second": 0,
+    "active_sessions": 0,
+    "active_subscriptions": 0,
+    "cpu": 274.58492975734356,
+    "memory_rss": 20246528,
+    "queue_depth": 0,
+    "deltas": {
+      "total_ticks": 0,
+      "total_messages": 0,
+      "total_packets": 0,
+      "bytes_received": 0
+    }
+  },
+  "websocket": {
+    "messages": 0,
+    "message_types": [],
+    "message_rate": 0.0,
+    "avg_interval_ms": 0.0,
+    "reconnects": 0,
+    "dropped": 0,
+    "duplicates": 0
+  },
+  "resources": {
+    "cpu_avg": 301.33,
+    "cpu_max": 517.72,
+    "memory_rss_avg": 20421017.6,
+    "memory_rss_max": 20443136,
+    "rss_growth_pct": 0.22,
+    "snapshots": [
+      {
+        "timestamp": 1782575730.339477,
+        "cpu": 464.56996148908854,
+        "memory_rss": 20398080,
+        "heap": 2014224,
+        "threads": 4,
+        "uptime": 577.000363569,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575733.733096,
+        "cpu": 517.7150192554558,
+        "memory_rss": 20402176,
+        "heap": 2000768,
+        "threads": 4,
+        "uptime": 581.000359923,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575737.8655958,
+        "cpu": 101.02564102564102,
+        "memory_rss": 20402176,
+        "heap": 1999840,
+        "threads": 4,
+        "uptime": 584.000365434,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575740.4905632,
+        "cpu": 246.2515883100381,
+        "memory_rss": 20406272,
+        "heap": 2020752,
+        "threads": 4,
+        "uptime": 587.000364826,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575744.791571,
+        "cpu": 241.7201540436457,
+        "memory_rss": 20410368,
+        "heap": 2005824,
+        "threads": 4,
+        "uptime": 591.000379622,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575747.342415,
+        "cpu": 466.00790513833994,
+        "memory_rss": 20410368,
+        "heap": 2010800,
+        "threads": 4,
+        "uptime": 594.000361973,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575750.731902,
+        "cpu": 94.96124031007753,
+        "memory_rss": 20414464,
+        "heap": 2010384,
+        "threads": 4,
+        "uptime": 597.000374367,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575753.394562,
+        "cpu": 481.6455696202531,
+        "memory_rss": 20414464,
+        "heap": 2030480,
+        "threads": 4,
+        "uptime": 599.00089485,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575756.056041,
+        "cpu": 89.25831202046037,
+        "memory_rss": 20418560,
+        "heap": 2014144,
+        "threads": 4,
+        "uptime": 602.000370039,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575758.719859,
+        "cpu": 335.5756791720569,
+        "memory_rss": 20418560,
+        "heap": 2016400,
+        "threads": 4,
+        "uptime": 605.000378132,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575762.1596212,
+        "cpu": 482.9487179487179,
+        "memory_rss": 20422656,
+        "heap": 2022480,
+        "threads": 4,
+        "uptime": 609.000362881,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575765.681739,
+        "cpu": 322.1216041397154,
+        "memory_rss": 20422656,
+        "heap": 2020960,
+        "threads": 4,
+        "uptime": 611.000388062,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575768.343988,
+        "cpu": 392.30769230769226,
+        "memory_rss": 20426752,
+        "heap": 2026336,
+        "threads": 4,
+        "uptime": 614.000381407,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575771.008061,
+        "cpu": 91.53846153846153,
+        "memory_rss": 20430848,
+        "heap": 2025520,
+        "threads": 4,
+        "uptime": 617.000368572,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575773.668603,
+        "cpu": 366.4955070603338,
+        "memory_rss": 20430848,
+        "heap": 2046352,
+        "threads": 4,
+        "uptime": 619.000363733,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575776.945322,
+        "cpu": 95.87628865979381,
+        "memory_rss": 20434944,
+        "heap": 2030032,
+        "threads": 4,
+        "uptime": 623.000364945,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575780.644816,
+        "cpu": 220.17994858611826,
+        "memory_rss": 20434944,
+        "heap": 2032336,
+        "threads": 4,
+        "uptime": 626.000361891,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575783.1957781,
+        "cpu": 476.0869565217392,
+        "memory_rss": 20439040,
+        "heap": 2053040,
+        "threads": 4,
+        "uptime": 629.000362009,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575785.7437692,
+        "cpu": 95.8974358974359,
+        "memory_rss": 20439040,
+        "heap": 2036848,
+        "threads": 4,
+        "uptime": 632.000363797,
+        "queue_depth": 0
+      },
+      {
+        "timestamp": 1782575788.41609,
+        "cpu": 444.5145018915511,
+        "memory_rss": 20443136,
+        "heap": 2040880,
+        "threads": 4,
+        "uptime": 634.000368029,
+        "queue_depth": 0
+      }
+    ]
+  },
+  "stress_test": {
+    "total_requests": 499,
+    "successful": 143,
+    "failed": 356,
+    "timeouts": 0,
+    "throughput_req_per_sec": 20.11,
+    "failure_rate_pct": 71.34,
+    "avg_latency_ms": 14205.59,
+    "p50_ms": 15800.16,
+    "p95_ms": 15805.21,
+    "p99_ms": 15805.86,
+    "errors": []
+  },
+  "ticks": {
+    "total_ticks": 0,
+    "stale_ticks": 0,
+    "duplicate_ticks": 0,
+    "missing_timestamps": 0,
+    "invalid_prices": 0,
+    "invalid_spreads": 0,
+    "unique_symbols": [],
+    "exchanges": [],
+    "errors": []
+  }
+}
