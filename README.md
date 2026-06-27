@@ -1,3 +1,6 @@
+Live on - https://datafeed.fun
+
+
 # Datafeed Server
 
 A high-performance, low-latency market data feed server supporting multiple cryptocurrency exchanges with WebSocket and HTTP interfaces.
