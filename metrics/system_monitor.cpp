@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <sys/times.h>
 #include <sys/resource.h>
+#include <malloc.h>
 #elif defined(_WIN32)
 #include <windows.h>
 #include <psapi.h>
@@ -188,9 +189,12 @@ SystemMonitor::SystemMetrics SystemMonitor::getSystemMetrics() {
             metrics.memory_growth_rate = 0.0;
         }
         
-        // Heap usage - use mallinfo2 on modern Linux
-        #ifdef __GLIBC__
+        // Heap usage — prefer mallinfo2 (glibc ≥ 2.33), fall back to mallinfo, else 0
+        #if defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 33))
         struct mallinfo2 mi = mallinfo2();
+        metrics.heap_usage = mi.uordblks;
+        #elif defined(__GLIBC__)
+        struct mallinfo mi = mallinfo();
         metrics.heap_usage = mi.uordblks;
         #else
         metrics.heap_usage = 0;
