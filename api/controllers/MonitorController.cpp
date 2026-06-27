@@ -16,7 +16,8 @@ std::string MonitorController::getQueryParam(
     auto qpos = target.find('?');
     if (qpos == std::string::npos) return {};
 
-    std::string qs = target.substr(qpos + 1);
+    auto qsv = target.substr(qpos + 1);
+    std::string qs(qsv.data(), qsv.size());
     std::string search = key + "=";
     auto kpos = qs.find(search);
     if (kpos == std::string::npos) return {};

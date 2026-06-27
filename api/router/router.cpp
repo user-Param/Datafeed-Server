@@ -49,8 +49,10 @@ std::string Router::path_to_regex(const std::string& path) const {
 }
 
 std::optional<http::response<http::string_body>> Router::handle_request(const http::request<http::string_body>& req) const {
-    std::string target(req.target());
-    std::string method(req.method_string());
+    auto target_sv = req.target();
+    std::string target(target_sv.data(), target_sv.size());
+    auto method_sv = req.method_string();
+    std::string method(method_sv.data(), method_sv.size());
 
     // Strip query string for route matching
     std::string path = target;
