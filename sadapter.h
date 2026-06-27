@@ -8,6 +8,23 @@
 #include <memory>
 #include <mutex>
 
+// ─── nlohmann/json std::optional compatibility ──────────────────────────────
+// Older nlohmann/json versions (< 3.6.0) do not support std::optional directly.
+// This specialization is activated only when nlohmann/json.hpp has been included.
+#ifdef NLOHMANN_JSON_VERSION_MAJOR
+namespace nlohmann {
+template<typename T>
+struct adl_serializer<std::optional<T>> {
+    static void to_json(json& j, const std::optional<T>& opt) {
+        if (opt.has_value())
+            j = *opt;
+        else
+            j = nullptr;
+    }
+};
+}
+#endif
+
 namespace datafeed {
 
 // Define structs that match the database tables
