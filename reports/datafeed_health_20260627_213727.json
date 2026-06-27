@@ -1,0 +1,153 @@
+{
+  "timestamp": "2026-06-27T16:04:58.853841+00:00",
+  "target": "https://datafeed.fun",
+  "duration_seconds": 148.28,
+  "pipeline": {
+    "stages": [
+      {
+        "name": "Service",
+        "passed": true,
+        "detail": "Status=200, response={'db': 'connected', 'feed_instances': 0, 'status': 'ok'}",
+        "diagnostics": []
+      },
+      {
+        "name": "Exchange",
+        "passed": true,
+        "detail": "0 exchange(s), connected=False",
+        "diagnostics": []
+      },
+      {
+        "name": "Feed Manager",
+        "passed": false,
+        "detail": "Status=500, response={'error': 'Unable to get feed status'}",
+        "diagnostics": []
+      },
+      {
+        "name": "Parser",
+        "passed": true,
+        "detail": "Status=200, parse_failures=0, corrupted_packets=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Normalizer",
+        "passed": true,
+        "detail": "Status=200, ticks/sec=0.0, trades/sec=0.0",
+        "diagnostics": []
+      },
+      {
+        "name": "Metrics Collector",
+        "passed": true,
+        "detail": "Status=200, keys=['database', 'exchanges', 'feed', 'network', 'performance', 'queues', 'sessions', 'system']",
+        "diagnostics": []
+      },
+      {
+        "name": "Dashboard",
+        "passed": true,
+        "detail": "Status=200, health_score=100.0, has_sections",
+        "diagnostics": []
+      },
+      {
+        "name": "Database",
+        "passed": true,
+        "detail": "Status=200, status=unknown, connections=0, writes=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Sessions",
+        "passed": true,
+        "detail": "Status=200, active_sessions=0, active_clients=0, total_connections=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Subscriptions",
+        "passed": true,
+        "detail": "active_subscriptions=0",
+        "diagnostics": []
+      },
+      {
+        "name": "Market Data",
+        "passed": false,
+        "detail": "All dashboard metrics remained zero for entire observation period",
+        "diagnostics": [
+          "No ticks, no messages, no packets flowing"
+        ]
+      }
+    ],
+    "passed_count": 9,
+    "failed_count": 2,
+    "all_passed": false
+  },
+  "feed": {
+    "alive": false
+  },
+  "latency": {
+    "avg": 650.0968752391806,
+    "p50": 792.6597499972559,
+    "p90": 1024.0594580027391,
+    "p95": 1184.4294160036952,
+    "p99": 1549.0711249949527,
+    "max": 2097.984499996528,
+    "min": 260.7498340003076
+  },
+  "mismatches": [
+    "uptime: REST=1184.000364497 WS=1191.000380967 diff=7.0",
+    "cpu: REST=256.9570871261378 WS=339.405684754522 diff=82.4"
+  ],
+  "health_score": 0,
+  "production_ready": false,
+  "dashboard": {
+    "uptime": 1184.000364497,
+    "health_score": 100.0,
+    "total_ticks": 0,
+    "total_messages": 0,
+    "total_packets": 0,
+    "messages_per_second": 0,
+    "ticks_per_second": 0,
+    "packets_per_second": 0,
+    "active_sessions": 0,
+    "active_subscriptions": 0,
+    "cpu": 256.9570871261378,
+    "memory_rss": 20897792,
+    "queue_depth": 0,
+    "deltas": {
+      "total_ticks": 0,
+      "total_messages": 0,
+      "total_packets": 0,
+      "bytes_received": 0
+    }
+  },
+  "websocket": {
+    "total_messages": 257,
+    "market_data_messages": 0,
+    "dashboard_snapshots": 129,
+    "symbols_seen": [],
+    "subscriptions_confirmed": false,
+    "message_types": [
+      "dashboard",
+      "network",
+      "performance",
+      "queues",
+      "system",
+      "exchange",
+      "metrics",
+      "feed"
+    ],
+    "message_rate": 7.37,
+    "market_data_rate": 0.0,
+    "avg_interval_ms": 136.28,
+    "reconnects": 0,
+    "dropped": 0,
+    "duplicates": 0
+  },
+  "ticks": {
+    "total_ticks": 0,
+    "stale_ticks": 0,
+    "duplicate_ticks": 0,
+    "missing_timestamps": 0,
+    "invalid_prices": 0,
+    "invalid_spreads": 0,
+    "unique_symbols": [],
+    "exchanges": [],
+    "errors": []
+  }
+}

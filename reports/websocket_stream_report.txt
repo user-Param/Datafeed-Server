@@ -1,0 +1,95 @@
+============================================================
+  DATAFEED WEBSOCKET STREAM TEST REPORT
+============================================================
+
+  Test:         WebSocket Stream Test
+  Timestamp:    2026-06-27T21:56:15.844457+00:00
+  Duration:     60s
+  WS URL:       wss://datafeed.fun
+  REST Base:    https://datafeed.fun
+  Exchange:     BINANCE
+  Symbols:      BTCUSDT, ETHUSDT, SOLUSDT
+
+  Result:       [91mFAIL[0m
+
+------------------------------------------------------------
+
+  CONNECTION
+    Connected:         False
+    Connect time:      2026-06-27T21:56:15.844457+00:00
+    Connect duration:  0 ms
+    Reconnects:        0
+    Disconnects:       1
+
+  SUBSCRIPTIONS
+    Requests sent:     0
+    Acknowledgements: 0
+    Dashboard active:  0
+    Failed:            0
+
+  MESSAGES
+    Total:             0
+    Market data:       0
+    Monitoring:        0
+    Unknown:           0
+
+  THROUGHPUT
+    Messages/sec:      0
+    Market data/sec:   0
+    Bytes/sec:         0
+    Total bytes:       0
+    Total packets:     0
+
+  LATENCY (ms)
+    Average interval:  0
+    Minimum interval:  0
+    Maximum interval:  0
+    P50:               0
+    P95:               0
+    P99:               0
+
+  PER-SYMBOL STATISTICS
+    BTCUSDT:
+      Price:    0
+      Bid:      0
+      Ask:      0
+      Updates:  0
+    ETHUSDT:
+      Price:    0
+      Bid:      0
+      Ask:      0
+      Updates:  0
+    SOLUSDT:
+      Price:    0
+      Bid:      0
+      Ask:      0
+      Updates:  0
+
+  DASHBOARD COMPARISON
+    Snapshots taken:          0
+    Dashboard msgs/sec:       0
+    Dashboard pkts/sec:       0
+    Dashboard bytes/sec:      0
+    Dashboard sessions:       0
+    Dashboard subscriptions:  0
+    Dashboard feed health:    0
+
+  CHECKS
+    ✗ connected
+    ✗ market_data_received
+    ✗ all_symbols_seen
+    ✗ monitoring_received
+    ✗ subscriptions_active
+    ✗ sessions_active
+
+  ERRORS
+    Connect failed (InvalidURI): https://www.datafeed.fun/ isn't a valid URI: scheme isn't ws or wss
+
+  RECOMMENDATIONS
+    * Check server availability and network connectivity.
+    * Verify WebSocket URL and port.
+
+============================================================
+  OVERALL: [91mFAIL[0m
+============================================================
+
