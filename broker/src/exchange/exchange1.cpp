@@ -3,18 +3,27 @@
 #include <chrono>
 #include <thread>
 #include <cctype>
+#include <iomanip>
+#include <sstream>
+#include <openssl/ssl.h>
+#include <boost/beast/ssl.hpp>
+#include <boost/beast/version.hpp>
 
-
-Exchange1::Exchange1() : connected_(false) {
+Exchange1::Exchange1()
+    : connected_(false)
+{
     ctx_.set_verify_mode(ssl::verify_none);
 }
 
 Exchange1::~Exchange1() {
      running_ = false;
      connected_ = false;
-    if (ws_.is_open()) {
-        beast::error_code ec;
-        ws_.close(websocket::close_code::normal, ec);
+    {
+        std::lock_guard<std::mutex> lock(ws_mutex_);
+        if (ws_.is_open()) {
+            beast::error_code ec;
+            ws_.close(websocket::close_code::normal, ec);
+        }
     }
     if (io_thread_.joinable()) io_thread_.join();
     if (reader_thread_.joinable()) reader_thread_.join();
@@ -22,25 +31,112 @@ Exchange1::~Exchange1() {
 
 void Exchange1::perform_connect() {
     try {
-        std::cout << "[Exchange1] Resolving DNS: stream.binance.com:9443" << std::endl;
+        std::cout << "[Exchange1] Resolving DNS: " << sni_hostname_ << ":" << ws_port_ << std::endl;
         tcp::resolver resolver(ioc_);
-        auto const results = resolver.resolve("stream.binance.com", "9443");
-        std::cout << "[Exchange1] DNS resolved" << std::endl;
+        auto const results = resolver.resolve(sni_hostname_, ws_port_);
+
+        std::cout << "[Exchange1] DNS resolved " << results.size() << " endpoint(s):" << std::endl;
+        for (auto it = results.begin(); it != results.end(); ++it) {
+            auto ep = it->endpoint();
+            std::cout << "  " << (ep.address().is_v4() ? "IPv4" : "IPv6") << " "
+                      << ep.address().to_string() << ":" << ep.port() << std::endl;
+        }
 
         std::cout << "[Exchange1] TCP connecting..." << std::endl;
-        net::connect(ws_.next_layer().next_layer(), results.begin(), results.end());
-        std::cout << "[Exchange1] TCP connected" << std::endl;
+        auto connect_start = std::chrono::steady_clock::now();
 
+        tcp::endpoint remote_ep = net::connect(ws_.next_layer().next_layer(), results);
+
+        auto connect_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - connect_start).count();
+
+        tcp::endpoint local_ep = ws_.next_layer().next_layer().local_endpoint();
+        std::cout << "[Exchange1] TCP connected" << std::endl;
+        std::cout << "[Exchange1]   local:  " << local_ep.address().to_string() << ":" << local_ep.port() << std::endl;
+        std::cout << "[Exchange1]   remote: " << remote_ep.address().to_string() << ":" << remote_ep.port() << std::endl;
+        std::cout << "[Exchange1]   latency: " << connect_duration << "ms" << std::endl;
+
+        // -------------------------------------------------------
+        // 3. Set SNI before TLS handshake (required for Cloudflare)
+        // -------------------------------------------------------
+        std::cout << "[Exchange1] Setting SNI hostname: " << sni_hostname_ << std::endl;
+        SSL* ssl_native = ws_.next_layer().native_handle();
+        if (ssl_native) {
+            if (!SSL_set_tlsext_host_name(ssl_native, sni_hostname_.c_str())) {
+                unsigned long err = ERR_get_error();
+                char errbuf[256];
+                ERR_error_string_n(err, errbuf, sizeof(errbuf));
+                std::cerr << "[Exchange1] SNI setting failed: " << errbuf << std::endl;
+            } else {
+                std::cout << "[Exchange1] SNI set successfully" << std::endl;
+            }
+        } else {
+            std::cerr << "[Exchange1] native SSL handle is null, cannot set SNI" << std::endl;
+        }
+
+        // -------------------------------------------------------
+        // 4. TLS Handshake
+        // -------------------------------------------------------
         std::cout << "[Exchange1] TLS handshake..." << std::endl;
         ws_.next_layer().handshake(ssl::stream_base::client);
-        std::cout << "[Exchange1] TLS handshake complete" << std::endl;
 
-        std::cout << "[Exchange1] WebSocket handshake: /stream" << std::endl;
-        ws_.handshake("stream.binance.com", "/stream");
-        std::cout << "[Exchange1] WebSocket handshake complete" << std::endl;
+        if (ssl_native) {
+            const char* tls_version = SSL_get_version(ssl_native);
+            const char* cipher = SSL_get_cipher_name(ssl_native);
+            const char* sni_used = SSL_get_servername(ssl_native, TLSEXT_NAMETYPE_host_name);
+            int cipher_bits = SSL_get_cipher_bits(ssl_native, nullptr);
+            X509* cert = SSL_get_peer_certificate(ssl_native);
 
+            std::cout << "[Exchange1] TLS handshake complete" << std::endl;
+            std::cout << "[Exchange1]   version: " << (tls_version ? tls_version : "?") << std::endl;
+            std::cout << "[Exchange1]   cipher:  " << (cipher ? cipher : "?")
+                      << " (" << cipher_bits << " bits)" << std::endl;
+            std::cout << "[Exchange1]   SNI:     " << (sni_used ? sni_used : "NONE") << std::endl;
+            if (cert) {
+                char subject[256], issuer[256];
+                X509_NAME_oneline(X509_get_subject_name(cert), subject, sizeof(subject));
+                X509_NAME_oneline(X509_get_issuer_name(cert), issuer, sizeof(issuer));
+                std::cout << "[Exchange1]   cert:    " << subject << std::endl;
+                std::cout << "[Exchange1]   issuer:  " << issuer << std::endl;
+                X509_free(cert);
+            }
+        }
+
+        // -------------------------------------------------------
+        // 5. WebSocket stream options
+        // -------------------------------------------------------
+        ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::client));
+
+        ws_.set_option(websocket::stream_base::decorator(
+            [this](websocket::request_type& req) {
+                req.set(beast::http::field::user_agent,
+                    std::string(BOOST_BEAST_VERSION_STRING) + " Exchange1/1.0");
+                req.set(beast::http::field::connection, "Upgrade");
+                req.set(beast::http::field::upgrade, "websocket");
+            }
+        ));
+
+        ws_.binary(false);
+
+        // -------------------------------------------------------
+        // 6. WebSocket Handshake (HTTP Upgrade)
+        // -------------------------------------------------------
+        std::cout << "[Exchange1] WebSocket handshake:" << std::endl;
+        std::cout << "[Exchange1]   Host:   " << ws_host_ << std::endl;
+        std::cout << "[Exchange1]   Target: " << ws_target_ << std::endl;
+
+        ws_.handshake(ws_host_, ws_target_);
+
+        std::cout << "[Exchange1] WebSocket handshake complete (101 Switching Protocols)" << std::endl;
         connected_ = true;
         std::cout << "[Exchange1] Connected to Binance WebSocket" << std::endl;
+        std::cout << "[Exchange1]   endpoint: wss://" << ws_host_ << ws_target_ << std::endl;
+    }
+    catch (beast::system_error const& e) {
+        std::cerr << "[Exchange1] Connection error (beast): " << e.what() << std::endl;
+        std::cerr << "[Exchange1]   error code: " << e.code() << " (" << e.code().message() << ")" << std::endl;
+        connected_ = false;
+        throw;
     }
     catch (std::exception const& e) {
         std::cerr << "[Exchange1] Connection error: " << e.what() << std::endl;
@@ -55,25 +151,52 @@ void Exchange1::start_reader() {
 }
 
 void Exchange1::connect() {
-     if (connected_) return;
-    
     running_ = true;
     io_thread_ = std::thread(&Exchange1::run_io_context, this);
-    
+
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    
-    perform_connect();
+
+    try {
+        perform_connect();
+    } catch (...) {
+        std::cerr << "[Exchange1] Initial connect failed, reader will retry" << std::endl;
+        connected_ = false;
+    }
+
     start_reader();
 }
 
 void Exchange1::subscribe(const std::vector<std::string>& symbols) {
     symbols_ = symbols;
     if (!connected_) {
-        std::cerr << "[Exchange1] Not connected. Call connect() first." << std::endl;
+        std::cerr << "[Exchange1] Not connected. Will subscribe on reconnect." << std::endl;
         return;
     }
+    std::lock_guard<std::mutex> lock(ws_mutex_);
     std::cout << "[Exchange1] Subscribing to " << symbols.size() << " symbols" << std::endl;
+    for (const auto& s : symbols) {
+        std::cout << "[Exchange1]   symbol=" << s << std::endl;
+    }
     send_subscribe(symbols);
+
+    try {
+        beast::flat_buffer buffer;
+        ws_.read(buffer);
+        std::string ack = beast::buffers_to_string(buffer.data());
+        std::cout << "[Exchange1] Subscription response: " << ack << std::endl;
+        auto j = nlohmann::json::parse(ack);
+        if (j.contains("result") && j["result"].is_null() && j.contains("id")) {
+            std::cout << "[Exchange1] Subscription acknowledged (id=" << j["id"] << ")" << std::endl;
+        } else if (j.contains("error")) {
+            std::cerr << "[Exchange1] Subscription error: " << j["error"] << std::endl;
+        }
+    } catch (beast::system_error const& e) {
+        // read might fail if a data frame arrives before we read the ack
+        // that's fine, data will be picked up by read_loop
+        std::cerr << "[Exchange1] Subscription ack read (expected if data came first): " << e.what() << std::endl;
+    } catch (std::exception const& e) {
+        std::cerr << "[Exchange1] Subscription ack parse error: " << e.what() << std::endl;
+    }
 }
 
 void Exchange1::set_callback(PriceCallback callback) {
@@ -88,9 +211,6 @@ void Exchange1::run_io_context() {
         }
         catch (std::exception const& e) {
             std::cerr << "[Exchange1] IO context error: " << e.what() << std::endl;
-            if (running_) {
-                running_ = false;
-            }
         }
     }
 }
@@ -98,51 +218,104 @@ void Exchange1::run_io_context() {
 void Exchange1::read_loop() {
     beast::flat_buffer buffer;
     int reconnect_delay = 1;
-    
+    int reconnect_attempt = 0;
+
     while (running_) {
         if (!connected_) {
-            std::cout << "[Exchange1] Attempting reconnection in " << reconnect_delay << "s..." << std::endl;
+            reconnect_attempt++;
+            std::cout << "[Exchange1] Reconnect #" << reconnect_attempt
+                      << " in " << reconnect_delay << "s..." << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(reconnect_delay));
             reconnect_delay = std::min(reconnect_delay * 2, 30);
-            
-            // Close existing socket if open
-            if (ws_.is_open()) {
-                beast::error_code ec;
-                ws_.close(websocket::close_code::normal, ec);
+
+            {
+                std::lock_guard<std::mutex> lock(ws_mutex_);
+                if (ws_.is_open()) {
+                    beast::error_code ec;
+                    ws_.close(websocket::close_code::normal, ec);
+                }
+                ws_.~stream();
+                new (&ws_) websocket::stream<ssl::stream<tcp::socket>>(ioc_, ctx_);
             }
-            
-            // Recreate stream after close
-            ws_.~stream();
-            new (&ws_) websocket::stream<ssl::stream<tcp::socket>>(ioc_, ctx_);
-            
+
+            if (ioc_.stopped()) {
+                std::cout << "[Exchange1] Restarting io_context" << std::endl;
+                ioc_.restart();
+            }
+
+            if (io_thread_.joinable()) io_thread_.join();
+            running_ = true;
+            io_thread_ = std::thread(&Exchange1::run_io_context, this);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
             try {
                 perform_connect();
                 reconnect_delay = 1;
-                if (!symbols_.empty()) send_subscribe(symbols_);
-                std::cout << "[Exchange1] Reconnection successful" << std::endl;
-            } catch (...) {
+                reconnect_attempt = 0;
+                if (!symbols_.empty()) {
+                    send_subscribe(symbols_);
+                    try {
+                        buffer.consume(buffer.size());
+                        ws_.read(buffer);
+                        std::string ack = beast::buffers_to_string(buffer.data());
+                        std::cout << "[Exchange1] Subscription ack (reconnect): " << ack << std::endl;
+                    } catch (...) { }
+                }
+                std::cout << "[Exchange1] Reconnect successful" << std::endl;
+            } catch (std::exception const& e) {
+                std::cerr << "[Exchange1] Reconnect failed: " << e.what() << std::endl;
+                connected_ = false;
                 continue;
             }
         }
-        
+
         try {
             buffer.consume(buffer.size());
             ws_.read(buffer);
             std::string msg = beast::buffers_to_string(buffer.data());
-            
+
             auto j = nlohmann::json::parse(msg);
+
+            if (j.contains("result") && j.contains("id")) {
+                std::cout << "[Exchange1] Subscription ack: " << msg << std::endl;
+                continue;
+            }
+            if (j.contains("error")) {
+                std::cerr << "[Exchange1] Binance error: " << msg << std::endl;
+                continue;
+            }
+
             if (j.contains("data")) {
                 auto& data = j["data"];
+                if (!data.contains("s") || !data.contains("c") ||
+                    !data.contains("b") || !data.contains("a") || !data.contains("E")) {
+                    continue;
+                }
+
                 std::string symbol = data["s"].get<std::string>();
                 double price = std::stod(data["c"].get<std::string>());
                 double bid   = std::stod(data["b"].get<std::string>());
                 double ask   = std::stod(data["a"].get<std::string>());
                 long timestamp = data["E"].get<long>();
-                
+
                 if (callback_) {
                     callback_(symbol, price, bid, ask, timestamp);
                 }
+            } else {
+                std::cout << "[Exchange1] Unrecognized: " << msg.substr(0, 200) << std::endl;
             }
+        }
+        catch (websocket::close_reason const& cr) {
+            std::cerr << "[Exchange1] Closed by server: code=" << cr.code
+                      << " reason=\"" << cr.reason << "\"" << std::endl;
+            connected_ = false;
+            continue;
+        }
+        catch (beast::system_error const& e) {
+            std::cerr << "[Exchange1] Beast error: " << e.what()
+                      << " (code=" << e.code() << ")" << std::endl;
+            connected_ = false;
+            if (running_) continue;
         }
         catch (std::exception const& e) {
             std::cerr << "[Exchange1] Read error: " << e.what() << std::endl;
@@ -164,8 +337,9 @@ void Exchange1::send_subscribe(const std::vector<std::string>& symbols) {
         params.push_back(lower + "@ticker");
     }
     sub["params"] = params;
-    
+
     std::string msg = sub.dump();
+    std::cout << "[Exchange1] Sending SUBSCRIBE: " << msg << std::endl;
     ws_.write(net::buffer(msg));
     std::cout << "[Exchange1] Subscribed to tickers for: ";
     for (const auto& s : symbols) std::cout << s << " ";
