@@ -285,18 +285,16 @@ void Exchange1::read_loop() {
                 continue;
             }
 
-            if (j.contains("data")) {
-                auto& data = j["data"];
-                if (!data.contains("s") || !data.contains("c") ||
-                    !data.contains("b") || !data.contains("a") || !data.contains("E")) {
-                    continue;
-                }
-
-                std::string symbol = data["s"].get<std::string>();
-                double price = std::stod(data["c"].get<std::string>());
-                double bid   = std::stod(data["b"].get<std::string>());
-                double ask   = std::stod(data["a"].get<std::string>());
-                long timestamp = data["E"].get<long>();
+            // Raw /ws format — ticker data is at the root
+            if (j.contains("e") && j["e"] == "24hrTicker" &&
+                j.contains("s") && j.contains("c") &&
+                j.contains("b") && j.contains("a") && j.contains("E"))
+            {
+                std::string symbol = j["s"].get<std::string>();
+                double price = std::stod(j["c"].get<std::string>());
+                double bid   = std::stod(j["b"].get<std::string>());
+                double ask   = std::stod(j["a"].get<std::string>());
+                long timestamp = j["E"].get<long>();
 
                 if (callback_) {
                     callback_(symbol, price, bid, ask, timestamp);

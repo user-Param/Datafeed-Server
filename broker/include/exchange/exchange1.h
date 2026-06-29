@@ -37,10 +37,8 @@ private:
     void run_io_context();
     void read_loop();
     void send_subscribe(const std::vector<std::string>& symbols);
-    void send_pong();
     void perform_connect();
     void start_reader();
-    void log_ws_response(const std::string& context);
     
     PriceCallback callback_;
     std::atomic<bool> connected_{false};
@@ -49,7 +47,7 @@ private:
     
     std::string sni_hostname_{"stream.binance.com"};
     std::string ws_host_{"stream.binance.com:9443"};
-    std::string ws_target_{"/stream"};
+    std::string ws_target_{"/ws"};
     std::string ws_port_{"9443"};
     
     net::io_context ioc_;
