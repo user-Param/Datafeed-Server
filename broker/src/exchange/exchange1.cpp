@@ -11,6 +11,7 @@ Exchange1::Exchange1() : connected_(false) {
 
 Exchange1::~Exchange1() {
      running_ = false;
+     connected_ = false;
     if (ws_.is_open()) {
         beast::error_code ec;
         ws_.close(websocket::close_code::normal, ec);
@@ -19,14 +20,7 @@ Exchange1::~Exchange1() {
     if (reader_thread_.joinable()) reader_thread_.join();
 }
 
-void Exchange1::connect() {
-     if (connected_) return;
-    
-    running_ = true;
-    io_thread_ = std::thread(&Exchange1::run_io_context, this);
-    
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    
+void Exchange1::perform_connect() {
     try {
         std::cout << "[Exchange1] Resolving DNS: stream.binance.com:9443" << std::endl;
         tcp::resolver resolver(ioc_);
@@ -47,16 +41,33 @@ void Exchange1::connect() {
 
         connected_ = true;
         std::cout << "[Exchange1] Connected to Binance WebSocket" << std::endl;
-        reader_thread_ = std::thread(&Exchange1::read_loop, this);
     }
     catch (std::exception const& e) {
         std::cerr << "[Exchange1] Connection error: " << e.what() << std::endl;
         connected_ = false;
-        running_ = false;
+        throw;
     }
 }
 
+void Exchange1::start_reader() {
+    if (reader_thread_.joinable()) reader_thread_.join();
+    reader_thread_ = std::thread(&Exchange1::read_loop, this);
+}
+
+void Exchange1::connect() {
+     if (connected_) return;
+    
+    running_ = true;
+    io_thread_ = std::thread(&Exchange1::run_io_context, this);
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    perform_connect();
+    start_reader();
+}
+
 void Exchange1::subscribe(const std::vector<std::string>& symbols) {
+    symbols_ = symbols;
     if (!connected_) {
         std::cerr << "[Exchange1] Not connected. Call connect() first." << std::endl;
         return;
@@ -78,7 +89,6 @@ void Exchange1::run_io_context() {
         catch (std::exception const& e) {
             std::cerr << "[Exchange1] IO context error: " << e.what() << std::endl;
             if (running_) {
-                // For simplicity, stop on error; a real implementation would attempt reconnect
                 running_ = false;
             }
         }
@@ -87,14 +97,40 @@ void Exchange1::run_io_context() {
 
 void Exchange1::read_loop() {
     beast::flat_buffer buffer;
-    while (running_ && connected_) {
+    int reconnect_delay = 1;
+    
+    while (running_) {
+        if (!connected_) {
+            std::cout << "[Exchange1] Attempting reconnection in " << reconnect_delay << "s..." << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(reconnect_delay));
+            reconnect_delay = std::min(reconnect_delay * 2, 30);
+            
+            // Close existing socket if open
+            if (ws_.is_open()) {
+                beast::error_code ec;
+                ws_.close(websocket::close_code::normal, ec);
+            }
+            
+            // Recreate stream after close
+            ws_.~stream();
+            new (&ws_) websocket::stream<ssl::stream<tcp::socket>>(ioc_, ctx_);
+            
+            try {
+                perform_connect();
+                reconnect_delay = 1;
+                if (!symbols_.empty()) send_subscribe(symbols_);
+                std::cout << "[Exchange1] Reconnection successful" << std::endl;
+            } catch (...) {
+                continue;
+            }
+        }
+        
         try {
             buffer.consume(buffer.size());
             ws_.read(buffer);
             std::string msg = beast::buffers_to_string(buffer.data());
             
             auto j = nlohmann::json::parse(msg);
-            // Binance combined stream format: {"stream":"btcusdt@ticker","data":{...}}
             if (j.contains("data")) {
                 auto& data = j["data"];
                 std::string symbol = data["s"].get<std::string>();
@@ -110,9 +146,8 @@ void Exchange1::read_loop() {
         }
         catch (std::exception const& e) {
             std::cerr << "[Exchange1] Read error: " << e.what() << std::endl;
-            if (running_) {
-                break;  // You could attempt reconnection here
-            }
+            connected_ = false;
+            if (running_) continue;
         }
     }
     std::cout << "[Exchange1] Read loop ended" << std::endl;

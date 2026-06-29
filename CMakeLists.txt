@@ -26,10 +26,10 @@ find_library(PQXX_LIB pqxx)
 find_path(PQXX_INCLUDE_DIR pqxx/pqxx)
 
 add_library(broker STATIC
-    ../broker/src/adapter/eadapter.cpp
-    ../broker/src/exchange/exchange1.cpp
-    ../broker/src/exchange/exchange2.cpp
-    ../broker/src/exchange/exchange3.cpp
+    broker/src/adapter/eadapter.cpp
+    broker/src/exchange/exchange1.cpp
+    broker/src/exchange/exchange2.cpp
+    broker/src/exchange/exchange3.cpp
 )
 
 if(NOT PQXX_LIB OR NOT PQXX_INCLUDE_DIR)
@@ -39,7 +39,7 @@ endif()
 include_directories(
     ${PostgreSQL_INCLUDE_DIRS}
     ${PQXX_INCLUDE_DIR}
-    ${CMAKE_SOURCE_DIR}/../broker/include
+    ${CMAKE_SOURCE_DIR}/broker/include
 )
 
 add_executable(eadapter main.cpp)
@@ -50,24 +50,24 @@ add_executable(datafeed
     live_source/live_source.cpp
     backtest_source/backtest_source.cpp
 
-    ../broker/src/adapter/eadapter.cpp
+    broker/src/adapter/eadapter.cpp
     sadapter.cpp
 
-    ../api/router/router.cpp
-    ../api/controllers/FeedController.cpp
-    ../api/controllers/DashboardController.cpp
-    ../api/controllers/MonitorController.cpp
-    ../api/controllers/AlertsController.cpp
-    ../api/controllers/ConfigController.cpp
-    ../api/controllers/SearchController.cpp
-    ../api/services/FeedService.cpp
-    ../api/services/ClientService.cpp
-    ../api/services/MonitorService.cpp
-    ../api/services/AlertsService.cpp
-    ../api/services/ConfigService.cpp
-    ../api/services/SearchService.cpp
+    api/router/router.cpp
+    api/controllers/FeedController.cpp
+    api/controllers/DashboardController.cpp
+    api/controllers/MonitorController.cpp
+    api/controllers/AlertsController.cpp
+    api/controllers/ConfigController.cpp
+    api/controllers/SearchController.cpp
+    api/services/FeedService.cpp
+    api/services/ClientService.cpp
+    api/services/MonitorService.cpp
+    api/services/AlertsService.cpp
+    api/services/ConfigService.cpp
+    api/services/SearchService.cpp
 
-    ../adapters/dadapter/dadapter.cpp
+    adapters/dadapter/dadapter.cpp
 
     metrics/metrics_collector.cpp
     metrics/latency_tracker.cpp
@@ -85,9 +85,9 @@ add_executable(datafeed
     metrics/state_manager.cpp
     metrics/weekly_rollup.cpp
 
-    ../broker/src/exchange/exchange1.cpp
-    ../broker/src/exchange/exchange2.cpp
-    ../broker/src/exchange/exchange3.cpp
+    broker/src/exchange/exchange1.cpp
+    broker/src/exchange/exchange2.cpp
+    broker/src/exchange/exchange3.cpp
     )
 
 

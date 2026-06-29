@@ -36,10 +36,13 @@ private:
     void run_io_context();
     void read_loop();
     void send_subscribe(const std::vector<std::string>& symbols);
+    void perform_connect();
+    void start_reader();
     
     PriceCallback callback_;
     std::atomic<bool> connected_{false};
     std::atomic<bool> running_{false};
+    std::vector<std::string> symbols_;
     
     net::io_context ioc_;
     ssl::context ctx_{ssl::context::tlsv12_client};
