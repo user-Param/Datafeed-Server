@@ -32,6 +32,7 @@ public:
     void connect();                             
     void subscribe(const std::vector<std::string>& symbols);  
     void set_callback(PriceCallback callback);  
+    bool is_connected() const { return connected_; }
     
 private:
     void run_io_context();

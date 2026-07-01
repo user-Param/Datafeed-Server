@@ -57,24 +57,30 @@ void EAdapter::set_callback(ExternalCallback cb) {
 
 void EAdapter::connect_to_exchange() {
     if (exchange_type_ == ExchangeType::BINANCE) {
-        if (exchange1_) exchange1_->connect();
+        if (exchange1_) {
+            exchange1_->connect();
+            if (exchange1_->is_connected())
+                std::cout << "[EAdapter] Connected to exchange" << std::endl;
+        }
     } else if (exchange_type_ == ExchangeType::JUPITER) {
-        if (exchange2_) exchange2_->connect();
+        if (exchange2_) { exchange2_->connect(); std::cout << "[EAdapter] Connected to exchange" << std::endl; }
     } else {
-        if (exchange3_) exchange3_->connect();
+        if (exchange3_) { exchange3_->connect(); std::cout << "[EAdapter] Connected to exchange" << std::endl; }
     }
-    std::cout << "[EAdapter] Connected to exchange" << std::endl;
 }
 
 void EAdapter::subscribe_symbols() {
     if (exchange_type_ == ExchangeType::BINANCE) {
-        if (exchange1_) exchange1_->subscribe(symbols_);
+        if (exchange1_) {
+            exchange1_->subscribe(symbols_);
+            if (exchange1_->is_connected())
+                std::cout << "[EAdapter] Subscribed to " << symbols_.size() << " symbols" << std::endl;
+        }
     } else if (exchange_type_ == ExchangeType::JUPITER) {
-        if (exchange2_) exchange2_->subscribe(symbols_);
+        if (exchange2_) { exchange2_->subscribe(symbols_); std::cout << "[EAdapter] Subscribed to " << symbols_.size() << " symbols" << std::endl; }
     } else {
-        if (exchange3_) exchange3_->subscribe(symbols_);
+        if (exchange3_) { exchange3_->subscribe(symbols_); std::cout << "[EAdapter] Subscribed to " << symbols_.size() << " symbols" << std::endl; }
     }
-    std::cout << "[EAdapter] Subscribed to " << symbols_.size() << " symbols" << std::endl;
 }
 
 void EAdapter::on_update() {

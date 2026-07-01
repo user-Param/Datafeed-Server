@@ -30,6 +30,7 @@ Exchange1::~Exchange1() {
 }
 
 void Exchange1::perform_connect() {
+    beast::http::response<beast::http::string_body> handshake_res;
     try {
         std::cout << "[Exchange1] Resolving DNS: " << sni_hostname_ << ":" << ws_port_ << std::endl;
         tcp::resolver resolver(ioc_);
@@ -125,9 +126,9 @@ void Exchange1::perform_connect() {
         std::cout << "[Exchange1]   Host:   " << ws_host_ << std::endl;
         std::cout << "[Exchange1]   Target: " << ws_target_ << std::endl;
 
-        ws_.handshake(ws_host_, ws_target_);
+        ws_.handshake(handshake_res, ws_host_, ws_target_);
 
-        std::cout << "[Exchange1] WebSocket handshake complete (101 Switching Protocols)" << std::endl;
+        std::cout << "[Exchange1] WebSocket handshake complete (" << handshake_res.result_int() << " " << handshake_res.reason() << ")" << std::endl;
         connected_ = true;
         std::cout << "[Exchange1] Connected to Binance WebSocket" << std::endl;
         std::cout << "[Exchange1]   endpoint: wss://" << ws_host_ << ws_target_ << std::endl;
@@ -135,6 +136,19 @@ void Exchange1::perform_connect() {
     catch (beast::system_error const& e) {
         std::cerr << "[Exchange1] Connection error (beast): " << e.what() << std::endl;
         std::cerr << "[Exchange1]   error code: " << e.code() << " (" << e.code().message() << ")" << std::endl;
+        if (handshake_res.result_int() > 0) {
+            std::cerr << "[Exchange1]   HTTP response:" << std::endl;
+            std::cerr << "[Exchange1]     status: " << handshake_res.result_int() << " "
+                      << handshake_res.reason() << std::endl;
+            for (auto const& field : handshake_res) {
+                std::cerr << "[Exchange1]     " << field.name_string() << ": "
+                          << field.value() << std::endl;
+            }
+            std::string const& body = handshake_res.body();
+            if (!body.empty()) {
+                std::cerr << "[Exchange1]     body: " << body.substr(0, 1024) << std::endl;
+            }
+        }
         connected_ = false;
         throw;
     }
