@@ -162,8 +162,6 @@ void Exchange1::connect() {
         std::cerr << "[Exchange1] Initial connect failed, reader will retry" << std::endl;
         connected_ = false;
     }
-
-    start_reader();
 }
 
 void Exchange1::subscribe(const std::vector<std::string>& symbols) {
@@ -177,7 +175,11 @@ void Exchange1::subscribe(const std::vector<std::string>& symbols) {
     for (const auto& s : symbols) {
         std::cout << "[Exchange1]   symbol=" << s << std::endl;
     }
-    send_subscribe(symbols);
+    try {
+        send_subscribe(symbols);
+    } catch (std::exception const& e) {
+        std::cerr << "[Exchange1] Subscribe write failed: " << e.what() << std::endl;
+    }
 
     try {
         beast::flat_buffer buffer;
@@ -191,12 +193,12 @@ void Exchange1::subscribe(const std::vector<std::string>& symbols) {
             std::cerr << "[Exchange1] Subscription error: " << j["error"] << std::endl;
         }
     } catch (beast::system_error const& e) {
-        // read might fail if a data frame arrives before we read the ack
-        // that's fine, data will be picked up by read_loop
         std::cerr << "[Exchange1] Subscription ack read (expected if data came first): " << e.what() << std::endl;
     } catch (std::exception const& e) {
         std::cerr << "[Exchange1] Subscription ack parse error: " << e.what() << std::endl;
     }
+
+    start_reader();
 }
 
 void Exchange1::set_callback(PriceCallback callback) {
@@ -270,6 +272,7 @@ void Exchange1::read_loop() {
         }
 
         try {
+            std::lock_guard<std::mutex> lock(ws_mutex_);
             buffer.consume(buffer.size());
             ws_.read(buffer);
             std::string msg = beast::buffers_to_string(buffer.data());
