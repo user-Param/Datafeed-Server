@@ -820,17 +820,19 @@ void listener::run()
 
 void listener::do_accept()
 {
+    socket_ = std::make_shared<tcp::socket>(net::make_strand(ioc_));
     acceptor_.async_accept(
-        net::make_strand(ioc_),
+        *socket_,
         beast::bind_front_handler(
             &listener::on_accept,
             shared_from_this()));
 }
 
-void listener::on_accept(beast::error_code ec, tcp::socket socket)
+void listener::on_accept(beast::error_code ec)
 {
     if (ec)
     {
+        std::cerr << "[Listener] Accept error: " << ec.message() << " (" << ec.value() << ")" << std::endl;
         if (ec == net::error::invalid_argument || ec == net::error::bad_descriptor)
         {
             std::cerr << "Fatal accept error, stopping listener: " << ec.message() << std::endl;
@@ -841,7 +843,8 @@ void listener::on_accept(beast::error_code ec, tcp::socket socket)
     }
     else
     {
-        std::make_shared<http_session>(std::move(socket), manager_, router_)->run();
+        std::cout << "[Listener] Accepted connection" << std::endl;
+        std::make_shared<http_session>(std::move(*socket_), manager_, router_)->run();
         do_accept();
     }
 }

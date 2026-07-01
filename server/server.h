@@ -83,6 +83,7 @@ class listener : public std::enable_shared_from_this<listener>
     tcp::acceptor acceptor_;
     std::shared_ptr<session_manager> manager_;
     std::shared_ptr<api::router::Router> router_;
+    std::shared_ptr<tcp::socket> socket_;
 
 public:
     listener(net::io_context &ioc,
@@ -93,7 +94,7 @@ public:
 
 private:
     void do_accept();
-    void on_accept(beast::error_code ec, tcp::socket socket);
+    void on_accept(beast::error_code ec);
 };
 
 #endif

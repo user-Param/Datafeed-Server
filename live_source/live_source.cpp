@@ -130,6 +130,10 @@ void live_source::on_market_data(const MarketData& data) {
     static uint64_t last_log = 0;
     touch_feed_instance(data.timestamp);
 
+    std::cout << "[LiveSource] on_market_data: symbol=" << data.symbol
+              << " price=" << data.price << " bid=" << data.bid << " ask=" << data.ask
+              << " manager=" << (manager_ ? "set" : "null") << std::endl;
+
     if (collector_) {
         collector_->onMessageReceived();
         collector_->onTick();
