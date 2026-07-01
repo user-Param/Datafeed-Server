@@ -113,10 +113,21 @@ void session_manager::broadcast_to_topic(const std::string& topic, const std::st
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = topic_subscribers_.find(topic);
     if (it != topic_subscribers_.end()) {
+        size_t n = it->second.size();
+        if (topic.find("ticker") != std::string::npos || topic.find("price") != std::string::npos) {
+            std::cout << "[SessionManager] broadcast_to_topic: topic=" << topic
+                      << " subscribers=" << n
+                      << " msg=" << message.substr(0, 100) << std::endl;
+        }
         for (auto session : it->second) {
             if (session) {
                 session->send_message(message);
             }
+        }
+    } else {
+        if (topic.find("ticker") != std::string::npos || topic.find("price") != std::string::npos) {
+            std::cout << "[SessionManager] broadcast_to_topic: topic=" << topic
+                      << " NO SUBSCRIBERS" << std::endl;
         }
     }
 }

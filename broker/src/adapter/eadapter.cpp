@@ -80,6 +80,9 @@ void EAdapter::subscribe_symbols() {
 void EAdapter::on_update() {
     auto cb = [this](const std::string& symbol, double price,
                      double bid, double ask, long ts) {
+        std::cout << "[EAdapter] callback: symbol=" << symbol
+                  << " price=" << price << " bid=" << bid << " ask=" << ask
+                  << " external_cb_=" << (external_cb_ ? "set" : "null") << std::endl;
         if (external_cb_) external_cb_(symbol, price, bid, ask, ts);
     };
 
