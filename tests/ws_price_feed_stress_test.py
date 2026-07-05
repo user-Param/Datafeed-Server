@@ -142,7 +142,7 @@ async def main():
     parser = argparse.ArgumentParser(
         description="WebSocket Price Feed Stress Test"
     )
-    parser.add_argument("--url", default="wss://www.datafeed.fun")
+    parser.add_argument("--url", default="ws://16.170.110.184:4444")
     parser.add_argument("--local", action="store_true")
     parser.add_argument("--clients", type=int, default=20, help="number of concurrent clients")
     parser.add_argument("--duration", type=int, default=20, help="test duration (seconds)")

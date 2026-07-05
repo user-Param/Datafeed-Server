@@ -130,6 +130,9 @@ void live_source::on_market_data(const MarketData& data) {
     static uint64_t last_log = 0;
     touch_feed_instance(data.timestamp);
 
+    auto total_start = std::chrono::steady_clock::now();
+
+
     std::cout << "[LiveSource] on_market_data: symbol=" << data.symbol
               << " price=" << data.price << " bid=" << data.bid << " ask=" << data.ask
               << " manager=" << (manager_ ? "set" : "null") << std::endl;
@@ -138,6 +141,9 @@ void live_source::on_market_data(const MarketData& data) {
         collector_->onMessageReceived();
         collector_->onTick();
     }
+
+    auto serial_start = std::chrono::steady_clock::now();
+
 
     nlohmann::json j;
     j["topic"] = "ticker_";
@@ -148,6 +154,18 @@ void live_source::on_market_data(const MarketData& data) {
     j["timestamp"] = data.timestamp;
 
     manager_->broadcast_to_topic("ticker_", j.dump());
+
+    if (collector_) {
+        collector_->latencyTracker().endLatencyMeasurement(
+            serial_start, LatencyTracker::LatencyCategory::SERIALIZATION);
+    }
+
+    // --- RECORD TOTAL PROCESSING LATENCY ---
+    if (collector_) {
+        collector_->latencyTracker().endLatencyMeasurement(
+            total_start, LatencyTracker::LatencyCategory::PROCESSING);
+    }
+
 
     // Log first market data and then every 1000th tick
     uint64_t now = data.timestamp;
