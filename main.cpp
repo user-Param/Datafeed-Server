@@ -34,9 +34,9 @@ int main(int argc, char* argv[]) {
     adapter = std::make_unique<EAdapter>(type);
 
     if (type == ExchangeType::BINANCE)
-        adapter->set_symbols({"BTCUSDT", "ETHUSDT", "SOLUSDT"});
+        adapter->set_symbols({"BTCUSDT"});
     else
-        adapter->set_symbols({"BTC", "ETH", "SOL"});
+        adapter->set_symbols({"BTC"});
 
 
 
@@ -60,9 +60,9 @@ int main(int argc, char* argv[]) {
 
                 adapter = std::make_unique<EAdapter>(newType);
                 if (newType == ExchangeType::BINANCE)
-                    adapter->set_symbols({"BTCUSDT", "ETHUSDT", "SOLUSDT"});
+                    adapter->set_symbols({"BTCUSDT"});
                 else
-                    adapter->set_symbols({"BTC", "ETH", "SOL"});
+                    adapter->set_symbols({"BTC"});
 
                 adapterThread = std::thread([&]() {
                     adapter->run();
