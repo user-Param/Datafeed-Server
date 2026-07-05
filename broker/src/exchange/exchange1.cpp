@@ -287,9 +287,7 @@ void Exchange1::read_loop() {
         }
 
         try {
-            // --- START: Measure exchange latency from message arrival ---
-            auto exchange_start = std::chrono::steady_clock::now();
-
+            
             std::lock_guard<std::mutex> lock(ws_mutex_);
             buffer.consume(buffer.size());
             ws_.read(buffer);
@@ -317,15 +315,7 @@ void Exchange1::read_loop() {
                 double ask   = std::stod(j["a"].get<std::string>());
                 long timestamp = j["E"].get<long>();
 
-                // --- Record exchange latency before calling callback ---
-                auto exchange_end = std::chrono::steady_clock::now();
-                double exchange_latency_ms = std::chrono::duration<double, std::milli>(exchange_end - exchange_start).count();
 
-                  // --- Record exchange latency ---
-                if (collector_) {
-                    collector_->latencyTracker().endLatencyMeasurement(
-                        exchange_start, LatencyTracker::LatencyCategory::EXCHANGE);
-                }
 
                 if (callback_) {
                     callback_(symbol, price, bid, ask, timestamp);
@@ -334,6 +324,7 @@ void Exchange1::read_loop() {
                 std::cout << "[Exchange1] Unrecognized: " << msg.substr(0, 200) << std::endl;
             }
         }
+
         catch (websocket::close_reason const& cr) {
             std::cerr << "[Exchange1] Closed by server: code=" << cr.code
                       << " reason=\"" << cr.reason << "\"" << std::endl;
