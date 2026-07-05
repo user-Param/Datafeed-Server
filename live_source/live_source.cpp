@@ -84,9 +84,9 @@ void live_source::start() {
 
     std::vector<std::string> symbols;
     if (exType == ExchangeType::BINANCE)
-        symbols = {"BTCUSDT", "ETHUSDT", "SOLUSDT"};
+        symbols = {"BTCUSDT"};
     else
-        symbols = {"BTC", "ETH", "SOL"};
+        symbols = {"BTC"};
 
     std::cout << "[LiveSource] Creating EAdapter for " << symbols.size() << " symbols" << std::endl;
     for (const auto& s : symbols) std::cout << "  symbol=" << s << std::endl;
@@ -146,7 +146,6 @@ void live_source::on_market_data(const MarketData& data) {
     static uint64_t last_log = 0;
     touch_feed_instance(data.timestamp);
 
-    auto total_start = std::chrono::steady_clock::now();
 
 
     if (collector_) {
@@ -160,6 +159,8 @@ void live_source::on_market_data(const MarketData& data) {
                 start_time, LatencyTracker::LatencyCategory::EXCHANGE);
         }
     }
+
+    auto total_start = std::chrono::steady_clock::now();
 
     // --- 2. PARSING LATENCY (Category 1) ---
     auto parse_start = std::chrono::steady_clock::now();

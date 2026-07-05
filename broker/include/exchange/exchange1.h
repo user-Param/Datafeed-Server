@@ -38,7 +38,6 @@ public:
     void subscribe(const std::vector<std::string>& symbols);  
     void set_callback(PriceCallback callback);  
     bool is_connected() const { return connected_; }
-    void set_collector(MetricsCollector* collector) { collector_ = collector; }
     
 private:
     void run_io_context();
@@ -51,7 +50,6 @@ private:
     std::atomic<bool> connected_{false};
     std::atomic<bool> running_{false};
     std::vector<std::string> symbols_;
-    MetricsCollector* collector_{nullptr};
 
     std::string sni_hostname_{"stream.binance.com"};
     std::string ws_host_{"stream.binance.com:9443"};
