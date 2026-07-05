@@ -15,6 +15,11 @@
 #include <boost/asio/ssl/stream.hpp>
 #include <nlohmann/json.hpp>
 #include <mutex>
+#include "../../metrics/metrics_collector.h"
+
+
+class MetricsCollector;
+
 
 using PriceCallback = std::function<void(const std::string& symbol, double price, double bid, double ask, long timestamp)>;
 
@@ -33,6 +38,7 @@ public:
     void subscribe(const std::vector<std::string>& symbols);  
     void set_callback(PriceCallback callback);  
     bool is_connected() const { return connected_; }
+    void set_collector(MetricsCollector* collector) { collector_ = collector; }
     
 private:
     void run_io_context();
@@ -45,7 +51,8 @@ private:
     std::atomic<bool> connected_{false};
     std::atomic<bool> running_{false};
     std::vector<std::string> symbols_;
-    
+    MetricsCollector* collector_{nullptr};
+
     std::string sni_hostname_{"stream.binance.com"};
     std::string ws_host_{"stream.binance.com:9443"};
     std::string ws_target_{"/ws"};

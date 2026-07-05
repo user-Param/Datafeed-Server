@@ -126,11 +126,44 @@ void live_source::stop() {
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void live_source::on_market_data(const MarketData& data) {
     static uint64_t last_log = 0;
     touch_feed_instance(data.timestamp);
 
     auto total_start = std::chrono::steady_clock::now();
+
+
+    if (collector_) {
+        auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        double exchange_latency_ms = static_cast<double>(now - data.timestamp);
+        if (exchange_latency_ms > 0 && exchange_latency_ms < 10000) {
+            auto start_time = std::chrono::steady_clock::now() - 
+                std::chrono::milliseconds(static_cast<long long>(exchange_latency_ms));
+            collector_->latencyTracker().endLatencyMeasurement(
+                start_time, LatencyTracker::LatencyCategory::EXCHANGE);
+        }
+    }
+
+    // --- 2. PARSING LATENCY (Category 1) ---
+    auto parse_start = std::chrono::steady_clock::now();
+
 
 
     std::cout << "[LiveSource] on_market_data: symbol=" << data.symbol
@@ -140,6 +173,8 @@ void live_source::on_market_data(const MarketData& data) {
     if (collector_) {
         collector_->onMessageReceived();
         collector_->onTick();
+        collector_->latencyTracker().endLatencyMeasurement(
+            parse_start, LatencyTracker::LatencyCategory::PARSING);
     }
 
     auto serial_start = std::chrono::steady_clock::now();
@@ -153,7 +188,14 @@ void live_source::on_market_data(const MarketData& data) {
     j["ask"] = data.ask;
     j["timestamp"] = data.timestamp;
 
-    manager_->broadcast_to_topic("ticker_", j.dump());
+     if (collector_) {
+        auto broadcast_start = std::chrono::steady_clock::now();
+        manager_->broadcast_to_topic("ticker_", j.dump());
+        collector_->latencyTracker().endLatencyMeasurement(
+            broadcast_start, LatencyTracker::LatencyCategory::BROADCAST);
+    } else {
+        manager_->broadcast_to_topic("ticker_", j.dump());
+    }
 
     if (collector_) {
         collector_->latencyTracker().endLatencyMeasurement(
@@ -182,6 +224,27 @@ void live_source::on_market_data(const MarketData& data) {
     }
     last_log++;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void live_source::switch_exchange(ExchangeType type, const std::vector<std::string>& symbols) {
     if (collector_) {
