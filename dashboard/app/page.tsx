@@ -53,34 +53,15 @@ export default function Home() {
   const handleToggleMinimize = (id: string) => {
     setMinimized((prev) => ({ ...prev, [id]: !prev[id] }));
   };
-
-  const addCard = () => {
-    const newId = `card-${Date.now()}`;
-    setCards((prev) => [
-      ...prev,
-      {
-        id: newId,
-        title: `New Card ${prev.length + 1}`,
-        content: (
-          <div className="h-full w-full flex items-center justify-center bg-gray-800/40 rounded">
-            <span className="text-gray-400 text-sm">New Widget</span>
-          </div>
-        ),
-      },
-    ]);
-  };
+  
   return (
     <>
-    <div className="flex flex-row">
-      <Sidebar />
-      <div className="flex flex-col w-full">
-        <Navbar />
-        <Ticker />
-        
-
-        <div className="h-screen w-full bg-gray-950 text-white p-4">
-      
-      <DashboardGrid>
+    <div>
+      <Navbar />
+      <div className="h-full w-full flex">
+        <div className="w-[3%]"><Sidebar /></div>
+        <div className="w-[97%]"><Ticker />
+          <DashboardGrid>
         {cards.map((card) => (
           <Card
             key={card.id}
@@ -94,25 +75,9 @@ export default function Home() {
           </Card>
         ))}
       </DashboardGrid>
-    </div>
-
-
-
-
-
-
-
-
-
+        </div>
       </div>
     </div>
-
-
-
-
-    
-      
-      
     </>
   );
 }
