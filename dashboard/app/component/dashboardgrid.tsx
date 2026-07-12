@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import GridLayout, { Layout, verticalCompactor, useContainerWidth } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 interface DashboardGridProps {
-  children: React.ReactNode; // can be a single child or array
+  children: React.ReactNode;
   onLayoutChange?: (layout: Layout) => void;
   cols?: number;
   rowHeight?: number;
@@ -23,45 +23,46 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
   const [layout, setLayout] = useState<Layout>([]);
   const { width, containerRef } = useContainerWidth();
 
-  // Convert children to array for easier mapping
   const childrenArray = useMemo(() => React.Children.toArray(children), [children]);
 
-  // Load saved layout from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('dashboard-layout');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setLayout(parsed);
           return;
         }
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     }
-    // Generate default layout based on children count
     const defaultLayout = childrenArray.map((child, i) => {
-      const id = (child as any)?.props?.id || `card-${i}`;
+      const element = child as React.ReactElement<{ id?: string }>;
+      const id = element?.props?.id || `card-${i}`;
       return {
         i: id,
         x: (i * 4) % cols,
         y: Math.floor(i / (cols / 4)) * 2,
-        w: 4,
-        h: 4,
-        minW: 2,
-        minH: 2,
+        w: 6,
+        h: 6,
+        minW: 4,
+        minH: 4,
       };
     });
     setLayout(defaultLayout);
   }, [childrenArray, cols]);
 
-  const handleLayoutChange = (newLayout: Layout) => {
+  const handleLayoutChange = useCallback((newLayout: Layout) => {
     setLayout(newLayout);
     localStorage.setItem('dashboard-layout', JSON.stringify(newLayout));
     if (onLayoutChange) onLayoutChange(newLayout);
-  };
+  }, [onLayoutChange]);
 
   return (
-      <div ref={containerRef} className="w-full">
+    <div ref={containerRef} className="w-full">
       <GridLayout
         className="layout"
         layout={layout}
@@ -73,9 +74,10 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
         compactor={verticalCompactor}
         autoSize
       >
-        {childrenArray.map((child) => {
+        {childrenArray.map((child, idx) => {
           if (!React.isValidElement(child)) return null;
-          const id = (child as any)?.props?.id || `card-${Math.random()}`;
+          const element = child as React.ReactElement<{ id?: string }>;
+          const id = element?.props?.id || `card-${idx}`;
           return (
             <div key={id} data-grid={{ i: id }}>
               {child}

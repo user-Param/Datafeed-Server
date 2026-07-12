@@ -3,7 +3,7 @@
 import Navbar from "./component/navbar";
 import Sidebar from "./component/sidebar";
 import Ticker from "./component/ticker";
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import DashboardGrid from './component/dashboardgrid';
 import Card from './cards/card';
 import Chart from "./cards/charts/chart";
@@ -19,6 +19,7 @@ import Event from "./cards/event/event"
 import Insight from "./cards/insight/insight"
 import Config from "./cards/config/config"
 import Session from "./cards/session/session"
+import { DatafeedProvider } from "./lib/datafeed-context";
 
 
 interface CardItem {
@@ -46,6 +47,9 @@ export default function Home() {
   ]);
   const [minimized, setMinimized] = useState<Record<string, boolean>>({});
 
+    const [refreshTriggers, setRefreshTriggers] = useState<Record<string, number>>({});
+
+
   const handleRemove = (id: string) => {
     setCards((prev) => prev.filter((card) => card.id !== id));
   };
@@ -53,9 +57,16 @@ export default function Home() {
   const handleToggleMinimize = (id: string) => {
     setMinimized((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const handleRefresh = useCallback((id: string) => {
+    setRefreshTriggers((prev) => ({
+      ...prev,
+      [id]: (prev[id] || 0) + 1,
+    }));
+  }, []);
   
   return (
-    <>
+    <DatafeedProvider>
     <div>
       <Navbar />
       <div className="h-full w-full flex">
@@ -69,15 +80,19 @@ export default function Home() {
             title={card.title}
             onRemove={handleRemove}
             onToggleMinimize={handleToggleMinimize}
+            onRefresh={handleRefresh}   
+
             isMinimized={minimized[card.id] || false}
           >
-            {card.content}
+            <div key={refreshTriggers[card.id] || 0}>
+                    {card.content}
+                  </div>
           </Card>
         ))}
       </DashboardGrid>
         </div>
       </div>
     </div>
-    </>
+    </DatafeedProvider>
   );
 }
