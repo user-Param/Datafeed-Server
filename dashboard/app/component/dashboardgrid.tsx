@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import GridLayout, { Layout, verticalCompactor, useContainerWidth } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -18,14 +18,16 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
   onLayoutChange,
   cols = 12,
   rowHeight = 60,
-  containerPadding = [20, 20],
+  containerPadding = [0, 0],
 }) => {
   const [layout, setLayout] = useState<Layout>([]);
+  const isLayoutLoaded = useRef(false);
   const { width, containerRef } = useContainerWidth();
 
   const childrenArray = useMemo(() => React.Children.toArray(children), [children]);
 
   useEffect(() => {
+    if (isLayoutLoaded.current) return;
     const saved = localStorage.getItem('dashboard-layout');
     if (saved) {
       try {
@@ -33,6 +35,9 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
         if (Array.isArray(parsed) && parsed.length > 0) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
           setLayout(parsed);
+                  loadedLayout = parsed;
+
+
           return;
         }
       } catch {
@@ -46,13 +51,14 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
         i: id,
         x: (i * 4) % cols,
         y: Math.floor(i / (cols / 4)) * 2,
-        w: 6,
-        h: 6,
-        minW: 4,
-        minH: 4,
+        w: 3,
+        h: 3,
+        minW: 3,
+        minH: 3,
       };
     });
     setLayout(defaultLayout);
+    isLayoutLoaded.current = true;
   }, [childrenArray, cols]);
 
   const handleLayoutChange = useCallback((newLayout: Layout) => {
