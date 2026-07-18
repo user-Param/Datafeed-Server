@@ -4,10 +4,6 @@ export default function Navbar() {
         <div className="bg-[#101010] text-white p-4 w-full max-h-16 flex items-center justify-between">
             <div className="flex gap-3">
                 <h1 className="text-xl font-bold">Datafeed</h1>
-                <button className="bg-[#161616] rounded px-4"></button>
-                <button className="bg-[#161616] rounded px-4">Button 2</button>
-                <button className="bg-[#161616] rounded px-4">Button 3</button>
-                <button className="bg-[#161616] rounded px-4">Button 4</button>
                 <button className="bg-[#161616] rounded px-4">History</button>
                 <button className="bg-[#161616] rounded px-4">Tools</button>
                 <button className="bg-[#161616] rounded px-4">Windows</button>

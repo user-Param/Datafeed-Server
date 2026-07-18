@@ -13,6 +13,7 @@ import Health from "./cards/health/health"
 import Throughput from "./cards/throughput/throughput"
 import Exchange from "./cards/exchange/exchange"
 import Pipeline from "./cards/pipeline/pipeline"
+import Pannel from "./cards/pannel/pannel"
 import Network from "./cards/network/network"
 import Database from "./cards/database/database"
 import Event from "./cards/event/event"
@@ -29,6 +30,12 @@ interface CardItem {
 }
 
 export default function Home() {
+
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
+  const toggleSidebar = () => setSidebarExpanded((prev) => !prev);
+
+
   const [cards, setCards] = useState<CardItem[]>([
     { id: 'chart', title: 'Charts', content: <Chart /> },
     { id: 'health', title: 'Feed Health', content: <Health /> },
@@ -43,6 +50,7 @@ export default function Home() {
     { id: 'insight', title: 'Insight', content: <Insight /> },
     { id: 'config', title: 'Config', content: <Config /> },
     { id: 'session', title: 'Session', content: <Session /> },
+    { id: 'pannel', title: 'Pannel', content: <Pannel />},
 
   ]);
   const [minimized, setMinimized] = useState<Record<string, boolean>>({});
@@ -70,7 +78,13 @@ export default function Home() {
     <div>
       <Navbar />
       <div className="h-full w-full flex">
-        <div className="w-[3%]"><Sidebar /></div>
+        <div
+            className={`transition-all duration-300 ${
+              sidebarExpanded ? "w-56" : "w-12"
+            } flex-shrink-0`}
+          >
+            <Sidebar expanded={sidebarExpanded} onToggle={toggleSidebar} />
+          </div>
         <div className="w-[97%]"><Ticker />
           <DashboardGrid>
         {cards.map((card) => (

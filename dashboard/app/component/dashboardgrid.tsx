@@ -26,24 +26,27 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
 
   const childrenArray = useMemo(() => React.Children.toArray(children), [children]);
 
+  // Load saved layout or generate default (only once)
   useEffect(() => {
     if (isLayoutLoaded.current) return;
+
     const saved = localStorage.getItem('dashboard-layout');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
+          console.log('[DashboardGrid] Loaded saved layout:', parsed);
           setLayout(parsed);
-                  loadedLayout = parsed;
-
-
+          isLayoutLoaded.current = true;
           return;
         }
-      } catch {
-        /* ignore */
+      } catch (err) {
+        console.warn('[DashboardGrid] Failed to parse saved layout:', err);
       }
     }
+
+    // No saved layout → generate default
+    console.log('[DashboardGrid] Generating default layout');
     const defaultLayout = childrenArray.map((child, i) => {
       const element = child as React.ReactElement<{ id?: string }>;
       const id = element?.props?.id || `card-${i}`;
@@ -61,8 +64,15 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
     isLayoutLoaded.current = true;
   }, [childrenArray, cols]);
 
+  // Update internal state when grid changes (but DO NOT save here)
   const handleLayoutChange = useCallback((newLayout: Layout) => {
     setLayout(newLayout);
+    if (onLayoutChange) onLayoutChange(newLayout);
+  }, [onLayoutChange]);
+
+  // Save to localStorage ONLY when user drags or resizes
+  const handleSaveLayout = useCallback((newLayout: Layout) => {
+    console.log('[DashboardGrid] Saving layout to localStorage:', newLayout);
     localStorage.setItem('dashboard-layout', JSON.stringify(newLayout));
     if (onLayoutChange) onLayoutChange(newLayout);
   }, [onLayoutChange]);
@@ -73,12 +83,19 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
         className="layout"
         layout={layout}
         onLayoutChange={handleLayoutChange}
+        onDragStop={handleSaveLayout}      // ✅ Save after drag
+        onResizeStop={handleSaveLayout}    // ✅ Save after resize
         width={width}
-        gridConfig={{ cols, rowHeight, containerPadding }}
-        dragConfig={{ enabled: true, handle: '.drag-handle' }}
-        resizeConfig={{ enabled: true }}
+        cols={cols}
+        rowHeight={rowHeight}
+        containerPadding={containerPadding}
+        draggableHandle=".drag-handle"
+        isDraggable={true}
+        isResizable={true}
         compactor={verticalCompactor}
-        autoSize
+        autoSize={true}
+        // Disable auto-compaction to avoid unwanted changes on load
+        compactType={null}
       >
         {childrenArray.map((child, idx) => {
           if (!React.isValidElement(child)) return null;

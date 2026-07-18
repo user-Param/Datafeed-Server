@@ -1,7 +1,7 @@
 "use client";
 
 import { useDatafeed } from "@/app/lib/datafeed-context";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 interface ExchangeData {
   name: string;
@@ -36,15 +36,8 @@ export default function Exchange() {
   const { exchanges } = useDatafeed();
   
   const [entries, setEntries] = useState<ExchangeEntry[]>([]);
-  const [hasData, setHasData] = useState(false);
-  const lastValidDataRef = useRef<ExchangeEntry[]>([]);
 
   useEffect(() => {
-    if (!exchanges) {
-      if (hasData) return;
-      return;
-    }
-
     let validEntries: ExchangeEntry[] = [];
 
     // Case 1: Array of exchanges
@@ -77,17 +70,9 @@ export default function Exchange() {
     }
 
     if (validEntries.length > 0) {
-      lastValidDataRef.current = validEntries;
       setEntries(validEntries);
-      setHasData(true);
-    } else if (lastValidDataRef.current.length > 0) {
-      setEntries(lastValidDataRef.current);
-      setHasData(true);
     }
-  }, [exchanges, hasData]);
-
-  // Summary and render logic same as above...
-  // (copy the summary and render sections from the previous version)
+  }, [exchanges]);
 
   const summary = useMemo(() => {
     if (entries.length === 0) return null;
@@ -105,24 +90,7 @@ export default function Exchange() {
     };
   }, [entries]);
 
-  if (!hasData && entries.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-gray-400">
-        Waiting for data...
-      </div>
-    );
-  }
-
-  if (entries.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-gray-400 flex-col gap-2">
-        <span>No exchange data available</span>
-        <span className="text-xs text-gray-600">
-          Data type: {typeof exchanges}, Keys: {exchanges ? Object.keys(exchanges).join(", ") : "none"}
-        </span>
-      </div>
-    );
-  }
+  
 
   return (
     <div className="h-full w-full p-2 flex flex-col gap-2 text-xs overflow-auto">
