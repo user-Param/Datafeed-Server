@@ -23,66 +23,60 @@ export default function Database() {
 
   return (
     <div className="h-full w-full p-2 flex flex-col gap-2 text-xs overflow-auto">
-      {!database ? (
-        <div className="text-gray-400 text-center mt-8">Waiting for data...</div>
-      ) : (
-        <>
-          <div className="flex items-center gap-2">
-            <div className="bg-gray-800/50 rounded p-2 text-center flex-1">
-              <div className="text-[10px] text-gray-400">Active Connections</div>
-              <div className="text-xl font-bold font-mono text-blue-400">{database.active_connections}</div>
-            </div>
-            <div className="bg-gray-800/50 rounded p-2 text-center flex-1">
-              <div className="text-[10px] text-gray-400">Queue Waiting</div>
-              <div className="text-xl font-bold font-mono text-yellow-400">{database.queue_waiting}</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-1 text-[10px]">
-            <div className="bg-gray-800/50 rounded p-1">
-              <span className="text-gray-400">Insert Latency</span>
-              <span className="float-right font-mono">{database.insert_latency_ms.toFixed(2)}ms
-                <MiniChart value={database.insert_latency_ms} />
-              </span>
-            </div>
-            <div className="bg-gray-800/50 rounded p-1">
-              <span className="text-gray-400">Query Latency</span>
-              <span className="float-right font-mono">{database.query_latency_ms.toFixed(2)}ms
-                <MiniChart value={database.query_latency_ms} />
-              </span>
-            </div>
-            <div className="bg-gray-800/50 rounded p-1">
-              <span className="text-gray-400">Writes/s</span>
-              <span className="float-right font-mono">{database.writes_per_sec.toFixed(1)}
-                <MiniChart value={database.writes_per_sec} />
-              </span>
-            </div>
-            <div className="bg-gray-800/50 rounded p-1">
-              <span className="text-gray-400">Reads/s</span>
-              <span className="float-right font-mono">{database.reads_per_sec.toFixed(1)}
-                <MiniChart value={database.reads_per_sec} />
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-1 text-[10px]">
-            <div className="bg-gray-800/50 rounded p-1">
-              <span className="text-gray-400">Transactions</span>
-              <span className="float-right font-mono">{database.transaction_count}</span>
-            </div>
-            <div className="bg-gray-800/50 rounded p-1">
-              <span className="text-gray-400">Conn Failures</span>
-              <span className="float-right font-mono">{database.connection_failures}</span>
-            </div>
-            <div className="bg-gray-800/50 rounded p-1">
-              <span className="text-gray-400">Failed Writes</span>
-              <span className="float-right font-mono">{database.failed_writes}</span>
-            </div>
-            <div className="bg-gray-800/50 rounded p-1">
-              <span className="text-gray-400">Success Writes</span>
-              <span className="float-right font-mono">{database.successful_writes}</span>
-            </div>
-          </div>
-        </>
-      )}
+      <div className="flex items-center gap-2">
+        <div className=" p-2 text-center flex-1">
+          <div className="text-[10px] text-gray-400">Active Connections</div>
+          <div className="text-xl font-bold font-mono">{database.active_connections}</div>
+        </div>
+        <div className=" p-2 text-center flex-1">
+          <div className="text-[10px] text-gray-400">Queue Waiting</div>
+          <div className="text-xl font-bold font-mono">{database.queue_waiting}</div>
+        </div>
+      </div>
+      <div className="grid grid-cols-4 gap-1 text-[10px]">
+        <div className="flex flex-col p-1">
+          <span className="text-gray-400">Insert Latency</span>
+          <span className="float-right font-mono">{database.insert_latency_ms.toFixed(2)}ms
+            <MiniChart value={database.insert_latency_ms} />
+          </span>
+        </div>
+        <div className="flex flex-col p-1">
+          <span className="text-gray-400">Query Latency</span>
+          <span className="float-right font-mono">{database.query_latency_ms.toFixed(2)}ms
+            <MiniChart value={database.query_latency_ms} />
+          </span>
+        </div>
+        <div className="flex flex-col p-1">
+          <span className="text-gray-400">Writes/s</span>
+          <span className="float-right font-mono">{database.writes_per_sec.toFixed(1)}
+            <MiniChart value={database.writes_per_sec} />
+          </span>
+        </div>
+        <div className="flex flex-col p-1">
+          <span className="text-gray-400">Reads/s</span>
+          <span className="float-right font-mono">{database.reads_per_sec.toFixed(1)}
+            <MiniChart value={database.reads_per_sec} />
+          </span>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-1 text-[10px]">
+        <div className=" p-1">
+          <span className="text-gray-400">Transactions</span>
+          <span className="float-right font-mono">{database.transaction_count}</span>
+        </div>
+        <div className=" p-1">
+          <span className="text-gray-400">Conn Failures</span>
+          <span className="float-right font-mono">{database.connection_failures}</span>
+        </div>
+        <div className=" p-1">
+          <span className="text-gray-400">Failed Writes</span>
+          <span className="float-right font-mono">{database.failed_writes}</span>
+        </div>
+        <div className=" p-1">
+          <span className="text-gray-400">Success Writes</span>
+          <span className="float-right font-mono">{database.successful_writes}</span>
+        </div>
+      </div>
     </div>
   );
 }
